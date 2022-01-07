@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>atemr_agent</name>
+  <version>0.0.0</version>
+  <description>The atemr_agent package</description>
+  <maintainer email="leocorp96@gmail.com">ephson</maintainer>
+  <license>MIT</license>
+  <url type="repository">git@github.com:LCP-WORKS/atemr_agent.git</url>
+  <author email="leocorp96@gmail.com">ephson</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>atemr_msgs</build_depend>
+  <build_depend>rospy</build_depend>
+  <build_depend>smach</build_depend>
+  <build_depend>smach_msgs</build_depend>
+  <build_depend>smach_ros</build_depend>
+  <build_export_depend>atemr_msgs</build_export_depend>
+  <build_export_depend>rospy</build_export_depend>
+  <build_export_depend>smach</build_export_depend>
+  <build_export_depend>smach_msgs</build_export_depend>
+  <build_export_depend>smach_ros</build_export_depend>
+  <exec_depend>atemr_msgs</exec_depend>
+  <exec_depend>rospy</exec_depend>
+  <exec_depend>smach</exec_depend>
+  <exec_depend>smach_msgs</exec_depend>
+  <exec_depend>smach_ros</exec_depend>
+
+  <export>
+  </export>
+</package>

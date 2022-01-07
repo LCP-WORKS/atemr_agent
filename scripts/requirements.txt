@@ -1,0 +1,10 @@
+bitarray==2.3.4
+can==0.0.0
+python_can==3.3.4
+PyYAML==6.0
+roslaunch==1.15.13
+rospkg==1.3.0
+rospy==1.15.13
+sensor_msgs==1.13.1
+smach==2.5.0
+smach_ros==2.5.0

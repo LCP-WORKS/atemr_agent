@@ -1,0 +1,15 @@
+#topics
+base_topic: /motor_status
+
+imu_topic: /imu/data_raw
+imu_filter_topic: /imu/data
+
+image_topic: /rs_cam/colour/image_raw
+camera_topic: /rs_cam/depth/points
+camera_laser_filter: /laser/pcl_scan_filtered
+
+rplidar_topic: /laser/scan
+rplidar_filter_topic: /laser/scan_filtered
+
+webserver_topic: /webserver_status
+agent_topic: /agent_status
