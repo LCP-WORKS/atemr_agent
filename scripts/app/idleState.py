@@ -22,7 +22,8 @@ class IDLEState(smach.State):
         userdata.goal_obj = None
         userdata.map_data = None
         userdata.shutdown_action = None
-
+        
+        # Trigger successful startup acknowledgement
         self.out_queue.put(StateData(akeys.TRIGR_ACK, True))
         while(not rospy.is_shutdown()):
             rospy.loginfo("IDLE running ....")

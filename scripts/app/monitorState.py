@@ -25,6 +25,7 @@ class MONITORState(smach.State):
         self.incoming_queue = incoming_queue
         self.outgoing_queue = outgoing_queue
 
+        rospy.init_node('monitor_node')
         self.agent_srvr = rospy.Service('AgentServer', AgentService, self.agentServe)
         self.webui_srvr = rospy.Service('WebUIServer', WebService, self.webuiServe)
         self.agent_status_pub = rospy.Publisher(cfgContext['agent_topic'], AgentStatus, latch=True, queue_size=1)
@@ -34,18 +35,18 @@ class MONITORState(smach.State):
             rospy.wait_for_service('HARDWAREServer', timeout=5)
             self.hdwClient = rospy.ServiceProxy('HARDWAREServer', HardwareService)
         except rospy.ROSException as e:
-            print("Service not avaialable: " + str(e))
+            rospy.logerr("Service not avaialable: " + str(e))
             self.errStateTrigger(ErrCodes.SERVICE_NO_EXIST, e)
         
         try:
             rospy.wait_for_service('DBUSServer', timeout=5)
             self.dbusClient = rospy.ServiceProxy('DBUSServer', DBUSService)
         except rospy.ROSException as e:
-            print("Service not avaialable: " + str(e))
+            rospy.logerr("Service not avaialable: " + str(e))
             self.errStateTrigger(ErrCodes.SERVICE_NO_EXIST, e)
         
         self.module_states = bitarray(2**3)
-        self.agent_states = bitarray(5)
+        self.agent_states = bitarray(6)
         self._mlock = threading.Lock() #acquisition control for modules
         self._alock = threading.Lock() # acquition control for statemachine
         self.state_updater_thread = threading.Thread(target=self.internalMonitor, daemon=True)
@@ -57,28 +58,40 @@ class MONITORState(smach.State):
         self.launch_obj = None
         self.parent_conn, self.child_conn = Pipe()
         self.streamer = Streamer(pipe=self.child_conn)
+
+    #determine if base is localized or not
+    def checkLocalized(self): 
+        pass
+
+    #determine if connected to WiFi
+    def checkWifiConnection(self): 
+        pass
     
     def internalMonitor(self):
         ''' constantly checks and updates *** agent_states & module_states *** 
-                0     |     1      |       2     |          3         |        4       |
-            Heartbeat | Hardware   |Manual/Auto  | Wifi(Connectivity) | Localization   |
+                0     |     1      |       2     |          3         |        4       |        5       |
+            Heartbeat | Hardware   |Manual/Auto  | Wifi(Connectivity) | Localization   |    Emergency   |
 
                 0     |     1      |  2  |   3   |    4   |     5     |        6       |        7     
             LeftMotor | RightMotor | IMU | Lidar | Camera | WebServer | IRSensor Front | IRSensor Rear
         '''
         #motor status
         try:
-            msg1 = rospy.wait_for_message(cfgContext['base_topic'], Status, timeout=5)
+            msg1 = rospy.wait_for_message(cfgContext['base_topic'], Status, timeout=2)
             self._mlock.acquire()
             self.module_states[0] = 1 if((msg1.motorID[0] == 0x141) and (msg1.state[0] != 0x09)) else 0
             self.module_states[1] = 1 if((msg1.motorID[1] == 0x142) and (msg1.state[1] != 0x09)) else 0
             self._mlock.release()
+            #emergency status
+            self._alock.acquire()
+            self.agent_states[5] = 1 if((msg1.is_emergency.data == True)) else 0
+            self._alock.release()
         except rospy.ROSException as e:
             print(e)
         
         #imu status
         try:
-            msg1 = rospy.wait_for_message(cfgContext['imu_topic'], Imu, timeout=5)
+            msg1 = rospy.wait_for_message(cfgContext['imu_topic'], Imu, timeout=2)
             self._mlock.acquire()
             self.module_states[2] = 1 if((msg1.header.frame_id == 'wt901_imu')) else 0
             self._mlock.release()
@@ -87,7 +100,7 @@ class MONITORState(smach.State):
 
         #lidar status
         try:
-            msg1 = rospy.wait_for_message(cfgContext['rplidar_topic'], LaserScan, timeout=5)
+            msg1 = rospy.wait_for_message(cfgContext['rplidar_topic'], LaserScan, timeout=2)
             self._mlock.acquire()
             self.module_states[3] = 1 if((msg1.header.frame_id == 'rplidar')) else 0
             self._mlock.release()
@@ -96,9 +109,9 @@ class MONITORState(smach.State):
 
         #camera status
         try:
-            msg1 = rospy.wait_for_message(cfgContext['camera_topic'], PointCloud2, timeout=5)
+            msg1 = rospy.wait_for_message(cfgContext['depth_topic'], PointCloud2, timeout=2)
             self._mlock.acquire()
-            self.module_states[4] = 1 if((msg1.header.frame_id == 'realsense_camera')) else 0
+            self.module_states[4] = 1 if((msg1.header.frame_id == 'camera_depth_optical_frame')) else 0
             self._mlock.release()
         except rospy.ROSException as e:
             print(e)
@@ -153,9 +166,9 @@ class MONITORState(smach.State):
             self._alock.acquire()
             self.agent_states[0] = 1 if(req.isAlive.data) else 0
             self._alock.release()
-            if(req.canMove.data != self.prev_move_status):
-                self.errStateTrigger(ErrCodes.BASE_EMERGENCY if(not req.canMove.data) else ErrCodes.BASE_OK, '')
-                self.prev_move_status = req.canMove.data #update move variable
+            #if(req.canMove.data != self.prev_move_status):
+               # self.errStateTrigger(ErrCodes.BASE_EMERGENCY if(not req.canMove.data) else ErrCodes.BASE_OK, '')
+                #  self.prev_move_status = req.canMove.data #update move variable
 
     def webuiServe(self, req):
         resp = WebServiceResponse()
@@ -222,7 +235,7 @@ class MONITORState(smach.State):
     def execute(self, userdata):
         rospy.loginfo('Monitoring ...')
         self.streamer.start()
-        rate = rospy.Rate(15)
+        rate = rospy.Rate(20)
         pwr_on_ACK = False
 
         while(not rospy.is_shutdown()):

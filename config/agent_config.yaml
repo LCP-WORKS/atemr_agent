@@ -1,15 +1,19 @@
 #topics
-base_topic: /base_status
+base_topic: /base_controller/base_status
 
 imu_topic: /imu #/imu/data_raw
 imu_filter_topic: /imu/data #NOT USED
 
 image_topic: /camera/colour/image_raw
-camera_topic: /camera/depth/points
+depth_topic: /camera/depth/points
 camera_laser_filter: /scan_pcl_filtered #NOT USED
 
 rplidar_topic: /scan
 rplidar_filter_topic: /scan_filtered #NOT USED
+
+rloc_odom_topic: /odometry/filtered_odom
+rloc_world_topic: /odometry/filtered_world
+
 
 webserver_topic: /webserver_status
 agent_topic: /agent_status

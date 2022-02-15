@@ -5,7 +5,7 @@ import rospy
 import smach
 
 from bitarray import bitarray
-from app.utils.checkCAN import checkAndActivateCANInterface
+#from app.utils.checkCAN import checkAndActivateCANInterface
 from app.utils.robot_launcher import RobotLauncher
 from app.utils.helper import StateData, AgentKeys as akeys, AgentStates as astates, ShutdownAction
 
@@ -27,7 +27,7 @@ class STARTUPState(smach.State):
         '''
         module_states = bitarray(9)
         module_states.setall(0)
-        tmp_states = bitarray(4)
+        tmp_states = bitarray(5)
         tmp_states.setall(0)
         outcome = None
         userdata.launch_obj = None
@@ -42,7 +42,7 @@ class STARTUPState(smach.State):
             #launch base with sensors
             tmp_states = self.launcher.run(module_states=tmp_states)
             if(tmp_states.all() and module_states[8]):
-                module_states[2:5] = tmp_states[1:]
+                #module_states[2:5] = tmp_states[1:]
                 outcome = 'success'
                 break
             else:
