@@ -49,8 +49,8 @@ class MONITORState(smach.State):
         self._alock = threading.Lock() # acquition control for statemachine
         self.state_updater_thread = threading.Thread(target=self.internalMonitor, daemon=True)
         self.state_updater_thread.start()
-        self.sys_ops_thread = threading.Thread(target=self.systemOps, daemon=True)
-        self.sys_ops_thread.start()
+        #self.sys_ops_thread = threading.Thread(target=self.systemOps, daemon=True)
+        #self.sys_ops_thread.start()
 
         self.prev_move_status = None
         self.launch_obj = None
