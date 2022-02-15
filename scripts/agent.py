@@ -80,9 +80,8 @@ def main():
                                         'launch_obj_i' : 'sm_launch_obj'})
 
 
-        smach.Concurrence.add('RUNNING_SM', sm_run, transitions={'run_complete':'complete'})
-        smach.Concurrence.add('MONITOR', app.monitorState.MONITORState(incoming_queue=states_to_monitor_queue, outgoing_queue=monitor_to_states_queue),
-                            transitions={'success':'MONITOR'}) #monitoring state goes here
+        smach.Concurrence.add('RUNNING_SM', sm_run)
+        smach.Concurrence.add('MONITOR', app.monitorState.MONITORState(incoming_queue=states_to_monitor_queue, outgoing_queue=monitor_to_states_queue)) #monitoring state goes here
 
     # Execute SMACH plan
     outcome = sm_con.execute()
