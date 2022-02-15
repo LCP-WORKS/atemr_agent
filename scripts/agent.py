@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import app.startupState
 import app.idleState
 import app.execState

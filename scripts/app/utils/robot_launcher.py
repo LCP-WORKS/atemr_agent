@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 from bitarray import bitarray
 import roslaunch
 import rospy

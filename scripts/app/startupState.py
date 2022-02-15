@@ -6,8 +6,8 @@ import smach
 
 from bitarray import bitarray
 #from app.utils.checkCAN import checkAndActivateCANInterface
-from app.utils.robot_launcher import RobotLauncher
-from app.utils.helper import StateData, AgentKeys as akeys, AgentStates as astates, ShutdownAction
+from utils.robot_launcher import RobotLauncher
+from utils.helper import StateData, AgentKeys as akeys, AgentStates as astates, ShutdownAction
 
 class STARTUPState(smach.State):
     def __init__(self, outgoing_queue):
