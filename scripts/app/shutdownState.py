@@ -13,7 +13,7 @@ class SHUTDOWNState(smach.State):
         self.in_queue = incoming_queue
         self.out_queue = outgoing_queue
         self.out_queue.put(StateData(akeys.SM_STATE, astates.SDWN))
-        rospy.init_node('sm_shutdown_node')
+        #rospy.init_node('sm_shutdown_node')
 
     def execute(self, userdata):
         rospy.loginfo('Shutdown ...')

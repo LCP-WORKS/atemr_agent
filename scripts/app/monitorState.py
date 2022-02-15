@@ -23,7 +23,7 @@ class MONITORState(smach.State):
         self.incoming_queue = incoming_queue
         self.outgoing_queue = outgoing_queue
 
-        rospy.init_node('sm_monitor_node')
+        #rospy.init_node('sm_monitor_node')
         self.agent_srvr = rospy.Service('AgentServer', AgentService, self.agentServe)
         self.webui_srvr = rospy.Service('WebUIServer', WebService, self.webuiServe)
         self.agent_status_pub = rospy.Publisher(cfgContext['agent_topic'], AgentStatus, latch=True, queue_size=1)

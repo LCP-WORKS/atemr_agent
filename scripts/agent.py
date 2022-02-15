@@ -7,6 +7,7 @@ import app.mappingState
 import app.errorState
 import app.shutdownState
 import app.monitorState
+import rospy
 
 import smach
 from multiprocessing import Queue
@@ -88,4 +89,5 @@ def main():
 
 
 if __name__ == '__main__':
+    rospy.init_node('sm_node')
     main()

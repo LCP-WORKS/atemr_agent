@@ -17,7 +17,7 @@ class MAPState(smach.State):
         self.in_queue = incoming_queue
         self.out_queue = outgoing_queue
         self.out_queue.put(StateData(akeys.SM_STATE, astates.MAP))
-        rospy.init_node('sm_map_node')
+        #rospy.init_node('sm_map_node')
 
     def execute(self, userdata):
         rospy.loginfo('Mapping ...')

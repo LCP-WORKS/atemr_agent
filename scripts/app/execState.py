@@ -11,7 +11,7 @@ class EXECState(smach.State):
         self.in_queue = incoming_queue
         self.out_queue = outgoing_queue
         self.out_queue.put(StateData(akeys.SM_STATE, astates.EXC))
-        rospy.init_node('sm_exec_node')
+        #rospy.init_node('sm_exec_node')
 
     def execute(self, userdata):
         rospy.loginfo('Execution ...')

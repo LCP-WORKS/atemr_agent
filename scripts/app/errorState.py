@@ -15,7 +15,7 @@ class ERRORState(smach.State):
         self.in_queue = incoming_queue
         self.out_queue = outgoing_queue
         self.out_queue.put(StateData(akeys.SM_STATE, astates.ERR))
-        rospy.init_node('sm_err_node')
+        #rospy.init_node('sm_err_node')
 
     def execute(self, userdata):
         rospy.loginfo('Error ...')

@@ -15,7 +15,7 @@ class STARTUPState(smach.State):
                     output_keys=['shutdown_action_o', 'launch_obj_o'])
         self.out_queue = outgoing_queue
         self.out_queue.put(StateData(akeys.SM_STATE, astates.SUP))
-        rospy.init_node('sm_startup_node')
+        #rospy.init_node('sm_startup_node')
         self.launcher = RobotLauncher()
 
     def execute(self, userdata):

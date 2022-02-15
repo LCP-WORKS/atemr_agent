@@ -13,7 +13,7 @@ class IDLEState(smach.State):
         self.in_queue = incoming_queue
         self.out_queue = outgoing_queue
         self.out_queue.put(StateData(akeys.SM_STATE, astates.IDL))
-        rospy.init_node('sm_idle_node')
+        #rospy.init_node('sm_idle_node')
 
     def execute(self, userdata):
         rospy.loginfo('Idling ...')
