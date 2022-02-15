@@ -6,17 +6,16 @@ import smach
 
 from bitarray import bitarray
 #from app.utils.checkCAN import checkAndActivateCANInterface
-from app.utils.robot_launcher import RobotLauncher
 from app.utils.helper import StateData, AgentKeys as akeys, AgentStates as astates, ShutdownAction
 
 class STARTUPState(smach.State):
-    def __init__(self, outgoing_queue):
+    def __init__(self, outgoing_queue, launcher_object):
         smach.State.__init__(self, outcomes=['success', 'failure'], 
                     output_keys=['shutdown_action_o', 'launch_obj_o'])
         self.out_queue = outgoing_queue
         self.out_queue.put(StateData(akeys.SM_STATE, astates.SUP))
         #rospy.init_node('sm_startup_node')
-        self.launcher = RobotLauncher()
+        self.launcher = launcher_object
 
     def execute(self, userdata):
         rospy.loginfo('Starting up ...')

@@ -63,10 +63,14 @@ class MONITORState(smach.State):
 
     #determine if connected to WiFi
     def checkWifiConnection(self): 
-        msg = rospy.wait_for_message(cfgContext['dbus_topic'], String, timeout=1)
-        self._alock.acquire()
-        self.agent_states[3] = 1 if((msg.data != '')) else 0
-        self._alock.release()
+        try:
+            msg = rospy.wait_for_message(cfgContext['dbus_topic'], String, timeout=1)
+            self._alock.acquire()
+            self.agent_states[3] = 1 if((msg.data != '')) else 0
+            self._alock.release()
+        except rospy.ROSException as e:
+            print(e)
+        
 
     
     def internalMonitor(self):

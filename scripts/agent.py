@@ -12,6 +12,7 @@ import rospy
 import smach
 from multiprocessing import Queue
 from queue import Empty
+from app.utils.robot_launcher import RobotLauncher
 
 #class CQueue(Queue):
 #    def clear(self):
@@ -24,6 +25,7 @@ from queue import Empty
 def main():
     states_to_monitor_queue = Queue()
     monitor_to_states_queue = Queue()
+    robot_launcher = RobotLauncher()
 
     # Create the sub SMACH state machine
     sm_con = smach.Concurrence(outcomes=['complete'],
@@ -44,7 +46,7 @@ def main():
         sm_run.userdata.sm_shutdown_action = None
         # Add states to the mid level container
         with sm_run:
-            smach.StateMachine.add('STARTUP', app.startupState.STARTUPState(outgoing_queue=states_to_monitor_queue),
+            smach.StateMachine.add('STARTUP', app.startupState.STARTUPState(outgoing_queue=states_to_monitor_queue, launcher_object=robot_launcher),
                             transitions={'success':'IDLE',
                                         'failure': 'SHUTDOWN'},
                             remapping={'shutdown_action_o' : 'sm_shutdown_action', 
