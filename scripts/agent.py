@@ -21,8 +21,8 @@ class CQueue(Queue):
             pass
 
 def main():
-    states_to_monitor_queue = CQueue()
-    monitor_to_states_queue = CQueue()
+    states_to_monitor_queue = Queue()
+    monitor_to_states_queue = Queue()
 
     # Create the sub SMACH state machine
     sm_con = smach.Concurrence(outcomes=['complete'],
