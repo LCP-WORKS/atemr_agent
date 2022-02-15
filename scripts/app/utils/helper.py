@@ -18,6 +18,7 @@ def sdataDecoder(state_queue, state):
         return None
 
 class AgentStates(Enum):
+    SUP = 'STARTUP'
     IDL = 'IDLE'
     EXC = 'EXECUTION'
     MAP = 'MAPPING'

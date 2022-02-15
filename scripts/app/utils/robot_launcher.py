@@ -4,7 +4,7 @@ import roslaunch
 import rospy
 from app.utils.config import cfgContext, rospack
 from rospy.exceptions import ROSException
-from sensor_msgs.msg import Imu, LaserScan, PointCloud2
+from sensor_msgs.msg import Imu, LaserScan, PointCloud2, Image
 from atemr_msgs.msg import Status
 import time
 
@@ -39,8 +39,8 @@ class RobotLauncher:
             time.sleep(1.5)
             try:
                 msg1 = rospy.wait_for_message(cfgContext['imu_topic'], Imu, timeout=5)
-                msg2 = rospy.wait_for_message(cfgContext['imu_filter_topic'], Imu, timeout=5)
-                if((msg1.header.frame_id == 'wt901_imu') and (msg2.header.frame_id == 'wt901_imu')):
+                #msg2 = rospy.wait_for_message(cfgContext['imu_filter_topic'], Imu, timeout=5)
+                if((msg1.header.frame_id == 'wt901_imu')): # or (msg2.header.frame_id == 'wt901_imu')):
                     module_states[1] = 1
                 else:
                     print('IMU node validation failed!')
@@ -54,8 +54,7 @@ class RobotLauncher:
             time.sleep(1.5)
             try:
                 msg1 = rospy.wait_for_message(cfgContext['rplidar_topic'], LaserScan, timeout=5)
-                msg2 = rospy.wait_for_message(cfgContext['rplidar_filter_topic'], LaserScan, timeout=5)
-                if((msg1.header.frame_id == 'rplidar') and (msg2.header.frame_id == 'rplidar')):
+                if((msg1.header.frame_id == 'rplidar')):
                     module_states[2] = 1
                 else:
                     print('LIDAR node validation failed!')
@@ -69,8 +68,9 @@ class RobotLauncher:
             time.sleep(1.5)
             try:
                 msg1 = rospy.wait_for_message(cfgContext['camera_topic'], PointCloud2, timeout=5)
-                msg2 = rospy.wait_for_message(cfgContext['camera_laser_filter'], LaserScan, timeout=5)
-                if((msg1.header.frame_id == 'realsense_camera') and (msg2.header.frame_id == 'rplidar')):
+                msg2 = rospy.wait_for_message(cfgContext['image_topic'], Image, timeout=5)
+                #msg2 = rospy.wait_for_message(cfgContext['camera_laser_filter'], LaserScan, timeout=5)
+                if((msg1.header.frame_id == 'realsense_camera') and (msg2.header.frame_id == 'realsense_camera')):
                     module_states[3] = 1
                 else:
                     print('CAMERA node validation failed!')
@@ -104,7 +104,7 @@ if __name__ == '__main__':
     m_states = bitarray(4)
     m_states.setall(0)
     m_states = launcher.run(module_states=m_states)
-    time.sleep(5)
+    time.sleep(10)
     print(m_states)
     launcher.terminate()
     exit()

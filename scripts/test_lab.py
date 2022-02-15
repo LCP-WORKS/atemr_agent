@@ -131,7 +131,10 @@ class ATEMRLab:
             self.image_file = rospack.get_path('atemr_agent') + '/data/images/demo1.png' if(img_toggle) else rospack.get_path('atemr_agent') + '/data/images/demo2.png'
             self.strmr.publishOnce(self.image_file)
             img_toggle = not img_toggle
-            rate.sleep()
+            try:
+                rate.sleep()
+            except (rospy.exceptions.ROSTimeMovedBackwardsException, rospy.exceptions.ROSTimeMovedBackwardsException) as ex:
+                pass
 
 
 if __name__ == '__main__':

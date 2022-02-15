@@ -1,15 +1,15 @@
 #topics
-base_topic: /motor_status
+base_topic: /base_status
 
-imu_topic: /imu/data_raw
-imu_filter_topic: /imu/data
+imu_topic: /imu #/imu/data_raw
+imu_filter_topic: /imu/data #NOT USED
 
-image_topic: /rs_cam/colour/image_raw
-camera_topic: /rs_cam/depth/points
-camera_laser_filter: /laser/pcl_scan_filtered
+image_topic: /camera/colour/image_raw
+camera_topic: /camera/depth/points
+camera_laser_filter: /scan_pcl_filtered #NOT USED
 
-rplidar_topic: /laser/scan
-rplidar_filter_topic: /laser/scan_filtered
+rplidar_topic: /scan
+rplidar_filter_topic: /scan_filtered #NOT USED
 
 webserver_topic: /webserver_status
 agent_topic: /agent_status

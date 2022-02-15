@@ -15,7 +15,7 @@ class STARTUPState(smach.State):
                     output_keys=['launch_obj', 'shutdown_action'])
         self.launcher = RobotLauncher()
         self.out_queue = outgoing_queue
-        self.out_queue.put(StateData(akeys.SM_STATE, astates.IDL))
+        self.out_queue.put(StateData(akeys.SM_STATE, astates.SUP))
 
     def execute(self, userdata):
         rospy.loginfo('Starting up ...')
@@ -35,8 +35,10 @@ class STARTUPState(smach.State):
         while(True):
             print("STARTUP running ....")
             #CAN Interface
-            if(module_states[8] == 0):
-                module_states[8] = 1 if(checkAndActivateCANInterface()) else 0
+            module_states[8] = 1 #auto set CAN interface
+            #if(module_states[8] == 0):
+                #module_states[8] = 1 if(checkAndActivateCANInterface()) else 0
+            
             #launch base with sensors
             tmp_states = self.launcher.run(module_states=tmp_states)
             if(tmp_states.all() and module_states[8]):
@@ -52,11 +54,10 @@ class STARTUPState(smach.State):
                 self.launcher.terminate(module_states=tmp_states, isRetry=True)
                 cnt += 1
             
-            time.sleep(0.1)
+            time.sleep(3.0) #wait another 3 seconds before trying to restart the modules
         
-        userdata.module_states = module_states[:7]
+        #userdata.module_states = module_states[:7]
         userdata.launch_obj = self.launcher
         self.out_queue.put(StateData(akeys.LNCH_OBJ, self.launcher))
         self.out_queue.put(StateData(akeys.MOD_STATES, tmp_states))
-
         return outcome

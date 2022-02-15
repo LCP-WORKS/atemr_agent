@@ -30,7 +30,7 @@ class Streamer:
             try:
                 cv_image = cv2.imread(img)
                 msg = self.bridge.cv2_to_imgmsg(cv_image, "bgr8")
-            except CvBridgeError as err:
+            except (CvBridgeError, TypeError) as err:
                 print(err)
             msg.header.frame_id = 'realsense_camera'
             msg.header.stamp = rospy.Time.now()
@@ -46,7 +46,7 @@ class Streamer:
                 today = datetime.now()
                 filename = self.imgDest + ('images/%d-%d-%d_%d:%d:%d.jpeg' %(today.day, today.month, today.year, today.hour, today.minute, today.second))
                 cv2.imwrite(filename, cv_image)
-            except CvBridgeError as ce:
+            except (CvBridgeError, TypeError) as ce:
                 print(str(ce))
         except rospy.ROSException as e:
             print(str(e))
@@ -79,7 +79,7 @@ class Streamer:
     def run(self, pipe_obj):
         #rospy.init_node('streamr_NODE', anonymous=True)
         rospy.Subscriber(cfgContext['image_topic'], Image, self.captureVideo, queue_size=10)
-        rate = rospy.Rate(10)
+        rate = rospy.Rate(5)
         while(not rospy.is_shutdown()):
             rospy.loginfo_once('Streamer up and running ...')
             if(pipe_obj.poll()):

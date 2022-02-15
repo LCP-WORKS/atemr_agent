@@ -59,7 +59,7 @@ class MONITORState(smach.State):
         self.streamer = Streamer(pipe=self.child_conn)
     
     def internalMonitor(self):
-        ''' constantly checks and updates ***module_states & agent_states*** 
+        ''' constantly checks and updates *** agent_states & module_states *** 
                 0     |     1      |       2     |          3         |        4       |
             Heartbeat | Hardware   |Manual/Auto  | Wifi(Connectivity) | Localization   |
 
