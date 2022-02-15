@@ -2,7 +2,7 @@
 from bitarray import bitarray
 import roslaunch
 import rospy
-from config import cfgContext, rospack
+from app.utils.config import cfgContext, rospack
 from rospy.exceptions import ROSException
 from sensor_msgs.msg import Imu, LaserScan, PointCloud2, Image
 from nav_msgs.msg import Odometry
