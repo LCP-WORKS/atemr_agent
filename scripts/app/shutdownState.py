@@ -4,20 +4,21 @@ import time
 import rospy
 import smach
 from atemr_msgs.srv import HardwareService, HardwareServiceRequest
-from app.utils.helper import StateData, AgentStates as astates, ShutdownAction, \
+from utils.helper import StateData, AgentStates as astates, ShutdownAction, \
                             AgentKeys as akeys
 
 class SHUTDOWNState(smach.State):
     def __init__(self, incoming_queue, outgoing_queue):
-        smach.State.__init__(self, outcomes=['success', 'restart'], input_keys=['launch_obj', 'shutdown_action'])
+        smach.State.__init__(self, outcomes=['success', 'restart'], input_keys=['shutdown_action_i', 'launch_obj_i'])
         self.in_queue = incoming_queue
         self.out_queue = outgoing_queue
         self.out_queue.put(StateData(akeys.SM_STATE, astates.SDWN))
+        rospy.init_node('sm_shutdown_node')
 
     def execute(self, userdata):
         rospy.loginfo('Shutdown ...')
-        action = userdata.shutdown_action
-        launch = userdata.launch_obj
+        action = userdata.shutdown_action_i
+        launch = userdata.launch_obj_i
 
         while(True):
             rospy.loginfo("SHUTDOWN running ....")

@@ -2,14 +2,16 @@
 
 import rospy
 import smach
-from app.utils.helper import StateData
+from utils.helper import StateData, sdataDecoder, AgentKeys as akeys,\
+                            AgentStates as astates, ErrCodes
 
 class EXECState(smach.State):
     def __init__(self, incoming_queue, outgoing_queue):
-        smach.State.__init__(self, outcomes=['success', 'failure'], input_keys=['goal_obj'], output_keys=['error_obj'])
+        smach.State.__init__(self, outcomes=['success', 'failure'], input_keys=['goal_obj_i'], output_keys=['err_obj_o'])
         self.in_queue = incoming_queue
         self.out_queue = outgoing_queue
-        self.out_queue.put(StateData('sm_state', 'EXECUTION'))
+        self.out_queue.put(StateData(akeys.SM_STATE, astates.EXC))
+        rospy.init_node('sm_exec_node')
 
     def execute(self, userdata):
         rospy.loginfo('Execution ...')

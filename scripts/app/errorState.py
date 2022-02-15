@@ -2,7 +2,8 @@
 
 import rospy
 import smach
-from app.utils.helper import StateData
+from utils.helper import StateData, sdataDecoder, AgentKeys as akeys,\
+                            AgentStates as astates, ErrCodes
 
 '''
     make call to reset motors should such error occur
@@ -10,10 +11,11 @@ from app.utils.helper import StateData
 
 class ERRORState(smach.State):
     def __init__(self, incoming_queue, outgoing_queue):
-        smach.State.__init__(self, outcomes=['success', 'failure'], input_keys=['error_obj'], output_keys=['error_obj'])
+        smach.State.__init__(self, outcomes=['success', 'failure'], input_keys=['err_obj_i'], output_keys=['shutdown_action_o'])
         self.in_queue = incoming_queue
         self.out_queue = outgoing_queue
-        self.out_queue.put(StateData('sm_state', 'ERROR'))
+        self.out_queue.put(StateData(akeys.SM_STATE, astates.ERR))
+        rospy.init_node('sm_err_node')
 
     def execute(self, userdata):
         rospy.loginfo('Error ...')

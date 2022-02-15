@@ -6,26 +6,26 @@ import smach
 from atemr_msgs.srv import AgentService, AgentServiceResponse, HardwareService, HardwareServiceRequest, WebService, WebServiceResponse, \
                            DBUSService, DBUSServiceRequest
 from atemr_msgs.msg import AgentStatus
-from app.utils.helper import StateData, sdataDecoder, ErrCodes, ShutdownAction, MapAction, MODE, VIDACTION
-from app.utils.helper import AgentStates as astates
-from app.utils.helper import AgentKeys as akeys
+from utils.helper import StateData, sdataDecoder, ErrCodes, ShutdownAction, MapAction, MODE, VIDACTION
+from utils.helper import AgentStates as astates
+from utils.helper import AgentKeys as akeys
 import threading
 from multiprocessing import Pipe
 from bitarray import bitarray
 from bitarray.util import ba2int
 from sensor_msgs.msg import Imu, LaserScan, PointCloud2
-from std_msgs.msg import Bool
+from std_msgs.msg import Bool, String
 from atemr_msgs.msg import Status, WebStatus
-from app.utils.config import cfgContext
-from app.utils.streamer import Streamer
+from utils.config import cfgContext
+from utils.streamer import Streamer
 
 class MONITORState(smach.State):
     def __init__(self, incoming_queue, outgoing_queue):
-        smach.State.__init__(self, outcomes=['success', 'exit'])
+        smach.State.__init__(self, outcomes=['success'])
         self.incoming_queue = incoming_queue
         self.outgoing_queue = outgoing_queue
 
-        rospy.init_node('monitor_node')
+        rospy.init_node('sm_monitor_node')
         self.agent_srvr = rospy.Service('AgentServer', AgentService, self.agentServe)
         self.webui_srvr = rospy.Service('WebUIServer', WebService, self.webuiServe)
         self.agent_status_pub = rospy.Publisher(cfgContext['agent_topic'], AgentStatus, latch=True, queue_size=1)
@@ -65,7 +65,11 @@ class MONITORState(smach.State):
 
     #determine if connected to WiFi
     def checkWifiConnection(self): 
-        pass
+        msg = rospy.wait_for_message(cfgContext['dbus_topic'], String, timeout=1)
+        self._alock.acquire()
+        self.agent_states[3] = 1 if((msg.data != '')) else 0
+        self._alock.release()
+
     
     def internalMonitor(self):
         ''' constantly checks and updates *** agent_states & module_states *** 
@@ -131,6 +135,8 @@ class MONITORState(smach.State):
         self._alock.acquire() #upate agent hardware flag
         self.agent_states[1] = 1 if(self.module_states.all()) else 0
         self._alock.release()
+        self.checkWifiConnection()
+        self.checkLocalized()
         time.sleep(0.5)
 
 

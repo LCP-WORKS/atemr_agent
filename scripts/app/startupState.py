@@ -12,10 +12,11 @@ from app.utils.helper import StateData, AgentKeys as akeys, AgentStates as astat
 class STARTUPState(smach.State):
     def __init__(self, outgoing_queue):
         smach.State.__init__(self, outcomes=['success', 'failure'], 
-                    output_keys=['launch_obj', 'shutdown_action'])
-        self.launcher = RobotLauncher()
+                    output_keys=['shutdown_action_o', 'launch_obj_o'])
         self.out_queue = outgoing_queue
         self.out_queue.put(StateData(akeys.SM_STATE, astates.SUP))
+        rospy.init_node('sm_startup_node')
+        self.launcher = RobotLauncher()
 
     def execute(self, userdata):
         rospy.loginfo('Starting up ...')
@@ -30,8 +31,7 @@ class STARTUPState(smach.State):
         tmp_states = bitarray(5)
         tmp_states.setall(0)
         outcome = None
-        userdata.launch_obj = None
-        userdata.shutdown_action = ShutdownAction.SHUTDOWN
+        
         while(True):
             print("STARTUP running ....")
             #CAN Interface
@@ -54,10 +54,11 @@ class STARTUPState(smach.State):
                 self.launcher.terminate(module_states=tmp_states, isRetry=True)
                 cnt += 1
             
-            time.sleep(3.0) #wait another 3 seconds before trying to restart the modules
+            time.sleep(3.0) #wait another 8 seconds before trying to restart the modules
         
         #userdata.module_states = module_states[:7]
-        userdata.launch_obj = self.launcher
+        userdata.shutdown_action = ShutdownAction.SHUTDOWN
+        userdata.launch_obj_out = self.launcher
         self.out_queue.put(StateData(akeys.LNCH_OBJ, self.launcher))
         self.out_queue.put(StateData(akeys.MOD_STATES, tmp_states))
         return outcome

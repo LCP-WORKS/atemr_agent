@@ -17,3 +17,4 @@ rloc_world_topic: /odometry/filtered_world
 
 webserver_topic: /webserver_status
 agent_topic: /agent_status
+dbus_topic: /connection_status

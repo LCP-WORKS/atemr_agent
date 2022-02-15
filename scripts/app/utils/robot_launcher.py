@@ -141,6 +141,7 @@ class RobotLauncher:
             if(module_states[0] == 0):
                 try:
                     self.launch_base(terminate=True)
+                    time.sleep(5.0)
                 except ROSException as e:
                     print(e)
             if(module_states[1] == 0):
@@ -187,6 +188,7 @@ class RobotLauncher:
                 print(e)
             try:
                 self.launch_base(terminate=True)
+                time.sleep(5.0)
             except ROSException as e:
                 print(e)
         time.sleep(3.0)
