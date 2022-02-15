@@ -10,7 +10,7 @@ from app.utils.robot_launcher import RobotLauncher
 from app.utils.helper import StateData, AgentKeys as akeys, AgentStates as astates, ShutdownAction
 
 class STARTUPState(smach.State):
-    def __init__(self, outgoing_queue, launcher_object):
+    def __init__(self, outgoing_queue):
         smach.State.__init__(self, outcomes=['success', 'failure'], 
                     output_keys=['shutdown_action_o', 'launch_obj_o'])
         self.out_queue = outgoing_queue
