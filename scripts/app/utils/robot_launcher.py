@@ -2,7 +2,7 @@
 from bitarray import bitarray
 import roslaunch
 import rospy
-from app.utils.config import cfgContext, rospack
+from config import cfgContext, rospack
 from rospy.exceptions import ROSException
 from sensor_msgs.msg import Imu, LaserScan, PointCloud2, Image
 from nav_msgs.msg import Odometry
@@ -13,6 +13,7 @@ class RobotLauncher:
     def __init__(self):
         uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
         roslaunch.configure_logging(uuid)
+        rospy.init_node('launcher_node')
         self.base_launch = roslaunch.parent.ROSLaunchParent(uuid, [rospack.get_path('atemr_hardware') + '/launch/base.launch'])
         self.imu_launch = roslaunch.parent.ROSLaunchParent(uuid, [rospack.get_path('atemr_hardware') + '/launch/imu.launch'])
         self.lidar_launch = roslaunch.parent.ROSLaunchParent(uuid, [rospack.get_path('atemr_hardware') + '/launch/lidar.launch'])
@@ -53,7 +54,7 @@ class RobotLauncher:
             self.rloc_odom_launch.start()
         else:
             self.rloc_odom_launch.shutdown()
-        time.sleep(2.0)
+        time.sleep(3.0)
     
     def launch_rloc_world(self, terminate=False):
         if(not terminate):
@@ -131,7 +132,8 @@ class RobotLauncher:
             except rospy.ROSException as e:
                 print(e)
                 module_states[4] = 0
-
+        
+        print("Launch States: ", module_states)
         return module_states
 
     
