@@ -12,13 +12,13 @@ import smach
 from multiprocessing import Queue
 from queue import Empty
 
-class CQueue(Queue):
-    def clear(self):
-        try:
-            while True:
-                self.get_nowait()
-        except Empty:
-            pass
+#class CQueue(Queue):
+#    def clear(self):
+#        try:
+#            while True:
+#                self.get_nowait()
+#        except Empty:
+#            pass
 
 def main():
     states_to_monitor_queue = Queue()
