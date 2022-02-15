@@ -13,7 +13,7 @@ class RobotLauncher:
     def __init__(self):
         uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
         roslaunch.configure_logging(uuid)
-        rospy.init_node('launcher_node')
+        rospy.init_node('launcher_node', anonymous=True)
         self.base_launch = roslaunch.parent.ROSLaunchParent(uuid, [rospack.get_path('atemr_hardware') + '/launch/base.launch'])
         self.imu_launch = roslaunch.parent.ROSLaunchParent(uuid, [rospack.get_path('atemr_hardware') + '/launch/imu.launch'])
         self.lidar_launch = roslaunch.parent.ROSLaunchParent(uuid, [rospack.get_path('atemr_hardware') + '/launch/lidar.launch'])
@@ -133,7 +133,6 @@ class RobotLauncher:
                 print(e)
                 module_states[4] = 0
         
-        print("Launch States: ", module_states)
         return module_states
 
     
@@ -195,11 +194,11 @@ class RobotLauncher:
 
 if __name__ == '__main__':
     launcher = RobotLauncher()
-    m_states = bitarray(6)
+    m_states = bitarray(5)
     m_states.setall(0)
     m_states = launcher.run(module_states=m_states)
     time.sleep(10)
-    print(m_states)
+    print("Launch States: ", m_states)
     launcher.terminate()
     exit()
 
