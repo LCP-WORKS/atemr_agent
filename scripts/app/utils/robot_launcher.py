@@ -24,6 +24,13 @@ class RobotLauncher:
         self.uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
         roslaunch.configure_logging(self.uuid)
 
+        self.base_launch = roslaunch.parent.ROSLaunchParent(self.uuid, [rospack.get_path('atemr_hardware') + '/launch/base.launch'])
+        self.imu_launch = roslaunch.parent.ROSLaunchParent(self.uuid, [rospack.get_path('atemr_hardware') + '/launch/imu.launch'])
+        self.lidar_launch = roslaunch.parent.ROSLaunchParent(self.uuid, [rospack.get_path('atemr_hardware') + '/launch/lidar.launch'])
+        self.camera_launch = roslaunch.parent.ROSLaunchParent(self.uuid, [rospack.get_path('atemr_hardware') + '/launch/camera.launch'])
+        self.rloc_odom_launch = roslaunch.parent.ROSLaunchParent(self.uuid, [rospack.get_path('atemr_localization') + '/launch/rloc_odom.launch'])
+        self.rloc_world_launch = roslaunch.parent.ROSLaunchParent(self.uuid, [rospack.get_path('atemr_localization') + '/launch/rloc_world.launch'])
+
     def launch_base(self, terminate=False):
         if(not terminate):
             self.base_launch = roslaunch.parent.ROSLaunchParent(self.uuid, [rospack.get_path('atemr_hardware') + '/launch/base.launch'])
