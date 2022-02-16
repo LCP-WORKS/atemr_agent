@@ -12,11 +12,11 @@ from enum import Enum
 from bitarray.util import ba2int
 
 class NodeType(Enum):
-    BASE = 0,
-    IMU = 1,
-    LIDAR = 2,
-    CAMERA = 3,
-    RLOC_ODOM = 4,
+    BASE = 0
+    IMU = 1
+    LIDAR = 2
+    CAMERA = 3
+    RLOC_ODOM = 4
     RLOC_WORLD = 5
 
 class RobotLauncher:
