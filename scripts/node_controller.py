@@ -16,7 +16,7 @@ node_states = bitarray(5)
 init = False
 
 def request_handler(req):
-    global nodes_launcher, init
+    global nodes_launcher, init, node_states
     if(req.is_basics.data):
         if(req.basics_action.data):
             if(init): #then restart
@@ -114,4 +114,3 @@ if __name__ == '__main__':
     
     rospy.loginfo("Terminating session ...")
     nodes_launcher.terminate(module_states=node_states, isRetry=False)
-    
