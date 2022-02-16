@@ -205,11 +205,11 @@ class RobotLauncher:
                 self.launch_camera(terminate=True)
             except ROSException as e:
                 print(e)
-            #try:
-            #    self.launch_base(terminate=True)
-            #    time.sleep(5.0)
-            #except ROSException as e:
-            #    print(e)
+            try:
+                self.launch_base(terminate=True)
+                time.sleep(1.5)
+            except ROSException as e:
+                print(e)
             module_states.setall(0)
             module_states[NodeType.BASE.value] = 1
         time.sleep(3.0)
