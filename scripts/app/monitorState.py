@@ -29,6 +29,19 @@ class MONITORState(smach.State):
         self.agent_status_pub = rospy.Publisher(cfgContext['agent_topic'], AgentStatus, latch=True, queue_size=1)
         self.agent_status_msg = AgentStatus()
 
+        #wait till node-controller is ready
+        nctl_ready = False
+        while(not nctl_ready):
+            rospy.loginf('MONITOR - waiting for Node controller ....')
+            try:
+                msg = rospy.wait_for_message(cfgContext['node_controller_topic'], String, timeout=10)
+                if(msg.data == 'READY'):
+                    nctl_ready = True
+                    break
+            except rospy.ROSException as e:
+                print(e)
+            time.sleep(0.1)
+
         try:
             rospy.wait_for_service('HARDWAREServer', timeout=5)
             self.hdwClient = rospy.ServiceProxy('HARDWAREServer', HardwareService)
@@ -217,8 +230,10 @@ class MONITORState(smach.State):
         if(req.is_map_action.data): 
             self.outgoing_queue.put(StateData(akeys.TRIGR_STATE_EXTRA, (astates.MAP, (MapAction(req.mapAction), req.mapName.data)), astates.IDL))
         # trigger goal execution
-        if(req.is_goal_action.data):
+        if((req.is_goal_action.data) and (self.agent_status_msg.agentSMState.data == astates.IDL.value)):
             self.outgoing_queue.put(StateData(akeys.TRIGR_STATE_EXTRA, (astates.EXC, req.goal), astates.IDL))
+        if((req.is_goal_action.data) and (self.agent_status_msg.agentSMState.data == astates.EXC.value)):
+            self.outgoing_queue.put(StateData(akeys.TRIGR_STATE_EXTRA, (astates.IDL, req.cancel_goal), astates.EXC))
         return resp
 
     def errStateTrigger(self, code, err):
@@ -281,7 +296,7 @@ class MONITORState(smach.State):
                         self.launch_obj = data_obj.dataObject
                     if((data_obj.name == akeys.MOD_STATES)):
                         self._mlock.acquire()
-                        self.module_states[2:5] = data_obj.dataObject[1:]
+                        self.module_states[2:5] = data_obj.dataObject[1:5]
                         self._mlock.release()
             
             #update module states and publish

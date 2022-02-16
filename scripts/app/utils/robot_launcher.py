@@ -8,12 +8,20 @@ from sensor_msgs.msg import Imu, LaserScan, PointCloud2, Image
 from nav_msgs.msg import Odometry
 from atemr_msgs.msg import Status
 import time
+from enum import Enum
+
+class NodeType(Enum):
+    BASE = 0,
+    IMU = 1,
+    LIDAR = 2,
+    CAMERA = 3,
+    RLOC_ODOM = 4,
+    RLOC_WORLD = 5
 
 class RobotLauncher:
     def __init__(self):
         uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
         roslaunch.configure_logging(uuid)
-        #rospy.init_node('launcher_node', anonymous=True)
         self.base_launch = roslaunch.parent.ROSLaunchParent(uuid, [rospack.get_path('atemr_hardware') + '/launch/base.launch'])
         self.imu_launch = roslaunch.parent.ROSLaunchParent(uuid, [rospack.get_path('atemr_hardware') + '/launch/imu.launch'])
         self.lidar_launch = roslaunch.parent.ROSLaunchParent(uuid, [rospack.get_path('atemr_hardware') + '/launch/lidar.launch'])
@@ -136,7 +144,7 @@ class RobotLauncher:
         return module_states
 
     
-    def terminate(self, module_states=bitarray(4), isRetry=False):
+    def terminate(self, module_states=bitarray(5), isRetry=False):
         if(isRetry):
             if(module_states[0] == 0):
                 try:
@@ -160,7 +168,7 @@ class RobotLauncher:
                 except ROSException as e:
                     print(e)
             
-            try:# always shutdown
+            try:# always shutdown [4]
                 self.launch_rloc_world(terminate=True)
             except ROSException as e:
                 print(e)
@@ -191,10 +199,13 @@ class RobotLauncher:
                 time.sleep(5.0)
             except ROSException as e:
                 print(e)
+            module_states.setall(0)
         time.sleep(3.0)
+        return module_states
 
 
 if __name__ == '__main__':
+    rospy.init_node('launcher_test_node', anonymous=True)
     launcher = RobotLauncher()
     m_states = bitarray(5)
     m_states.setall(0)

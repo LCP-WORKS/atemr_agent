@@ -5,18 +5,19 @@ import rospy
 import smach
 
 from bitarray import bitarray
+from std_msgs.msg import String
+from atemr_msgs.srv import NodeControllerService, NodeControllerServiceRequest
+from app.utils.config import cfgContext
+from app.utils.robot_launcher import NodeType as NT
 #from app.utils.checkCAN import checkAndActivateCANInterface
-from app.utils.robot_launcher import RobotLauncher
 from app.utils.helper import StateData, AgentKeys as akeys, AgentStates as astates, ShutdownAction
 
 class STARTUPState(smach.State):
     def __init__(self, outgoing_queue):
         smach.State.__init__(self, outcomes=['success', 'failure'], 
-                    output_keys=['shutdown_action_o', 'launch_obj_o'])
+                    output_keys=['shutdown_action_o'])
         self.out_queue = outgoing_queue
         self.out_queue.put(StateData(akeys.SM_STATE, astates.SUP))
-        rospy.init_node('sm_node')
-        self.launcher = RobotLauncher()
 
     def execute(self, userdata):
         rospy.loginfo('Starting up ...')
@@ -28,37 +29,56 @@ class STARTUPState(smach.State):
         '''
         module_states = bitarray(9)
         module_states.setall(0)
-        tmp_states = bitarray(5)
-        tmp_states.setall(0)
+        node_states = bitarray(5)
+        node_states.setall(0)
         outcome = None
+        nctlr_ready = False
+        node_ctlClient = rospy.ServiceProxy('NodeControllerServer', NodeControllerService)
         
-        while(True):
-            print("STARTUP running ....")
+        while(not rospy.is_shutdown()):
+            rospy.loginfo("STARTUP running ....")
             #CAN Interface
             module_states[8] = 1 #auto set CAN interface
             #if(module_states[8] == 0):
                 #module_states[8] = 1 if(checkAndActivateCANInterface()) else 0
-            
-            #launch base with sensors
-            tmp_states = self.launcher.run(module_states=tmp_states)
-            if(tmp_states.all() and module_states[8]):
-                #module_states[2:5] = tmp_states[1:]
-                outcome = 'success'
-                break
-            else:
-                if(cnt >= max_retries):
-                    print('Retries exhausted !!')
-                    outcome = 'failure'
+
+            if(nctlr_ready):
+                if(rospy.wait_for_service('NodeControllerServer', timeout=5)):
+                    
+                    # get hardware status by making an empty call to the server
+                    resp = node_ctlClient.call(NodeControllerServiceRequest())
+                    node_states = bitarray(resp.hardwareStatus)
+
+                #launch base with sensors
+                if(node_states.all() and module_states[8]):
+                    #module_states[2:5] = tmp_states[1:]
+                    outcome = 'success'
                     break
-                print('Modules initialization failure. Retry in a few seconds ...')
-                self.launcher.terminate(module_states=tmp_states, isRetry=True)
-                cnt += 1
-            
-            time.sleep(3.0) #wait another 8 seconds before trying to restart the modules
+                else:
+                    if(cnt >= max_retries):
+                        rospy.logerr('Retries exhausted !!')
+                        outcome = 'failure'
+                        break
+                    rospy.loginfo('Modules initialization failure. Retry in a few seconds ...')
+                    #make call to restart basis
+                    if(rospy.wait_for_service('NodeControllerServer', timeout=5)):
+                        req = NodeControllerServiceRequest()
+                        req.is_basics.data = True
+                        req.basics_action.data = True #restart
+                        resp = node_ctlClient.call(req)
+                        node_states = bitarray(resp.hardwareStatus)
+                    cnt += 1
+                time.sleep(3.0) #wait another 8 seconds before trying to restart the modules
+            else: #check for READY message from NodeController
+                try:
+                    msg = rospy.wait_for_message(cfgContext['node_controller_topic'], String, timeout=10)
+                    if(msg.data == 'READY'):
+                        nctlr_ready = True
+                except rospy.ROSException as e:
+                    print(e)
         
         #userdata.module_states = module_states[:7]
         userdata.shutdown_action = ShutdownAction.SHUTDOWN
-        userdata.launch_obj_out = self.launcher
-        self.out_queue.put(StateData(akeys.LNCH_OBJ, self.launcher))
-        self.out_queue.put(StateData(akeys.MOD_STATES, tmp_states))
+        #self.out_queue.put(StateData(akeys.LNCH_OBJ, self.launcher))
+        self.out_queue.put(StateData(akeys.MOD_STATES, node_states))
         return outcome

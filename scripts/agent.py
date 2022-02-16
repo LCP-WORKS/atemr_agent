@@ -13,6 +13,7 @@ import smach
 from multiprocessing import Queue
 from queue import Empty
 
+
 #class CQueue(Queue):
 #    def clear(self):
 #        try:
@@ -37,7 +38,6 @@ def main():
 
         #create mid level SMACH state machine
         sm_run = smach.StateMachine(outcomes=['run_complete'])
-        sm_run.userdata.sm_launch_obj = None
         sm_run.userdata.sm_goal_obj = None
         sm_run.userdata.sm_map_data = None
         sm_run.userdata.sm_err_obj = None
@@ -47,8 +47,7 @@ def main():
             smach.StateMachine.add('STARTUP', app.startupState.STARTUPState(outgoing_queue=states_to_monitor_queue),
                             transitions={'success':'IDLE',
                                         'failure': 'SHUTDOWN'},
-                            remapping={'shutdown_action_o' : 'sm_shutdown_action', 
-                                        'launch_obj_o' : 'sm_launch_obj'})
+                            remapping={'shutdown_action_o' : 'sm_shutdown_action'})
             smach.StateMachine.add('IDLE', app.idleState.IDLEState(incoming_queue=monitor_to_states_queue, outgoing_queue=states_to_monitor_queue),
                             transitions={'nav':'EXECUTION',
                                         'map':'MAPPING',
@@ -76,8 +75,7 @@ def main():
             smach.StateMachine.add('SHUTDOWN', app.shutdownState.SHUTDOWNState(incoming_queue=monitor_to_states_queue, outgoing_queue=states_to_monitor_queue),
                             transitions={'success':'run_complete',
                                         'restart': 'STARTUP'},
-                            remapping={'shutdown_action_i' : 'sm_shutdown_action',
-                                        'launch_obj_i' : 'sm_launch_obj'})
+                            remapping={'shutdown_action_i' : 'sm_shutdown_action'})
 
 
         smach.Concurrence.add('RUNNING_SM', sm_run)
@@ -88,4 +86,5 @@ def main():
 
 
 if __name__ == '__main__':
+    rospy.init_node('sm_node')
     main()
