@@ -103,7 +103,7 @@ if __name__ == '__main__':
     r = rospy.Rate(10)
     
     while(not rospy.is_shutdown()):
-        rospy.loginfo("Node controller running ....")
+        rospy.loginfo_throttle(5, "Node controller running ....")
         if(not init):
             node_states = nodes_launcher.run(module_states=node_states)
             msg = String()
@@ -111,3 +111,7 @@ if __name__ == '__main__':
             status_pub.publish(msg)
             init = True
         r.sleep
+    
+    rospy.loginfo("Terminating session ...")
+    nodes_launcher.terminate(module_states=node_states, isRetry=False)
+    
