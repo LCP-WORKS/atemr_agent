@@ -9,6 +9,7 @@ from nav_msgs.msg import Odometry
 from atemr_msgs.msg import Status
 import time
 from enum import Enum
+from bitarray.util import ba2int
 
 class NodeType(Enum):
     BASE = 0,
@@ -174,6 +175,9 @@ class RobotLauncher:
                 print(e)
             module_states[4] == 0
         else: # complete shutdown
+            if(ba2int(module_states) == 0):
+                return module_states
+
             try:
                 self.launch_rloc_world(terminate=True)
             except ROSException as e:

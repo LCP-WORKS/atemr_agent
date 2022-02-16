@@ -11,6 +11,7 @@ from app.utils.config import cfgContext
 from app.utils.robot_launcher import NodeType as NT
 #from app.utils.checkCAN import checkAndActivateCANInterface
 from app.utils.helper import StateData, AgentKeys as akeys, AgentStates as astates, ShutdownAction
+from bitarray.util import int2ba
 
 class STARTUPState(smach.State):
     def __init__(self, outgoing_queue):
@@ -47,7 +48,7 @@ class STARTUPState(smach.State):
                     
                     # get hardware status by making an empty call to the server
                     resp = node_ctlClient.call(NodeControllerServiceRequest())
-                    node_states = bitarray(resp.hardwareStatus)
+                    node_states = int2ba(resp.hardwareStatus)
 
                 #launch base with sensors
                 if(node_states.all() and module_states[8]):

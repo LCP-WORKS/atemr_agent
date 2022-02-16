@@ -12,7 +12,7 @@ from app.utils.streamer import Streamer
 import threading
 from multiprocessing import Pipe
 from bitarray import bitarray
-from bitarray.util import ba2int
+from bitarray.util import ba2int, int2ba
 from sensor_msgs.msg import Imu, LaserScan, PointCloud2
 from std_msgs.msg import Bool, String
 from atemr_msgs.msg import Status, WebStatus
