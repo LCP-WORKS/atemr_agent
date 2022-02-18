@@ -124,8 +124,8 @@ class RobotLauncher:
             self.launch_imu()
             try:
                 msg1 = rospy.wait_for_message(cfgContext['imu_topic'], Imu, timeout=5)
-                #msg2 = rospy.wait_for_message(cfgContext['imu_filter_topic'], Imu, timeout=5)
-                if((msg1.header.frame_id == 'wt901_imu')): # or (msg2.header.frame_id == 'wt901_imu')):
+                msg2 = rospy.wait_for_message(cfgContext['imu_filter_topic'], Imu, timeout=5)
+                if((msg1.header.frame_id == 'wt901_imu') or (msg2.header.frame_id == 'wt901_imu')):
                     module_states[1] = 1
                 else:
                     print('IMU node validation failed!')

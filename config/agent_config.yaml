@@ -1,8 +1,8 @@
 #topics
 base_topic: /base_controller/base_status
 
-imu_topic: /imu #/imu/data_raw
-imu_filter_topic: /imu/data #NOT USED
+imu_topic: /imu/data_raw
+imu_filter_topic: /imu/data
 
 image_topic: /camera/color/image_raw
 depth_topic: /camera/depth/color/points
