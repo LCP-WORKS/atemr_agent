@@ -2,3 +2,4 @@ scripts/.vscode/
 scripts/venv/
 **/__python_cache__/
 scripts/app/__pycache__/
+scripts/app/utils/__pycache__/
