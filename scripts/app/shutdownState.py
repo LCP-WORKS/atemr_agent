@@ -24,8 +24,18 @@ class SHUTDOWNState(smach.State):
         self.out_queue.put(StateData(akeys.SM_STATE, astates.SDWN))
         while(not rospy.is_shutdown()):
             rospy.loginfo("SHUTDOWN running ....")
+
+            #kill all launches
+            try:
+                rospy.wait_for_service('NodeControllerServer', timeout=5)
+                req = NodeControllerServiceRequest()
+                req.is_basics.data = True
+                req.basics_action.data = False #terminate
+                node_ctlClient.call(req)
+            except rospy.ROSException as e:
+                rospy.logerr(e)
+            
             if((action.value == ShutdownAction.SHUTDOWN.value) or (action == None)): #make service call to shutdown PC
-                print('Shutting down ...')
                 os.system('sudo shutdown now -h')
                 """ try:
                     req = HardwareServiceRequest()
@@ -38,7 +48,6 @@ class SHUTDOWNState(smach.State):
                 except (rospy.ServiceException, rospy.ROSException) as e:
                     rospy.logerr('Service call failed: %s' % e) """
             if((action.value == ShutdownAction.RESTART.value)): #make service call to restart PC
-                print('Rebooting ...')
                 os.system('sudo reboot')
                 """ try:
                     req = HardwareServiceRequest()
@@ -50,15 +59,5 @@ class SHUTDOWNState(smach.State):
                         rospy.logerr('Failed to trigger restart')
                 except (rospy.ServiceException, rospy.ROSException) as e:
                     rospy.logerr('Service call failed: %s' % e) """
-            #kill all launches
-            try:
-                rospy.wait_for_service('NodeControllerServer', timeout=5)
-                req = NodeControllerServiceRequest()
-                req.is_basics.data = True
-                req.basics_action.data = False #terminate
-                node_ctlClient.call(req)
-                break
-            except rospy.ROSException as e:
-                rospy.logerr(e)
 
         return outcome
