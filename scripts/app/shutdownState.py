@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import time
+import time, os
 import rospy
 import smach
 from atemr_msgs.srv import HardwareService, HardwareServiceRequest
@@ -24,28 +24,6 @@ class SHUTDOWNState(smach.State):
         self.out_queue.put(StateData(akeys.SM_STATE, astates.SDWN))
         while(not rospy.is_shutdown()):
             rospy.loginfo("SHUTDOWN running ....")
-            if((action == ShutdownAction.SHUTDOWN) or (action == None)): #make service call to shutdown PC
-                try:
-                    req = HardwareServiceRequest()
-                    req.shutdownSystem.data = True
-                    resp = self.hdwServer(req)
-                    if(resp.result.data):
-                        break
-                    else:
-                        rospy.logerr('Failed to trigger shutdown')
-                except (rospy.ServiceException, rospy.ROSException) as e:
-                    rospy.logerr('Service call failed: %s' % e)
-            elif((action == ShutdownAction.RESTART)): #make service call to restart PC
-                try:
-                    req = HardwareServiceRequest()
-                    req.restartSystem.data = True
-                    resp = self.hdwServer(req)
-                    if(resp.result.data):
-                        break
-                    else:
-                        rospy.logerr('Failed to trigger restart')
-                except (rospy.ServiceException, rospy.ROSException) as e:
-                    rospy.logerr('Service call failed: %s' % e)
 
             #kill all launches
             try:
@@ -57,5 +35,30 @@ class SHUTDOWNState(smach.State):
                 break
             except rospy.ROSException as e:
                 rospy.logerr(e)
-        
+            
+            if((action == ShutdownAction.SHUTDOWN) or (action == None)): #make service call to shutdown PC
+                os.system('sudo shutdown now -h')
+                """ try:
+                    req = HardwareServiceRequest()
+                    req.shutdownSystem.data = True
+                    resp = self.hdwServer(req)
+                    if(resp.result.data):
+                        break
+                    else:
+                        rospy.logerr('Failed to trigger shutdown')
+                except (rospy.ServiceException, rospy.ROSException) as e:
+                    rospy.logerr('Service call failed: %s' % e) """
+            elif((action == ShutdownAction.RESTART)): #make service call to restart PC
+                os.system('sudo reboot')
+                """ try:
+                    req = HardwareServiceRequest()
+                    req.restartSystem.data = True
+                    resp = self.hdwServer(req)
+                    if(resp.result.data):
+                        break
+                    else:
+                        rospy.logerr('Failed to trigger restart')
+                except (rospy.ServiceException, rospy.ROSException) as e:
+                    rospy.logerr('Service call failed: %s' % e) """
+
         return outcome
