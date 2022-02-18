@@ -36,6 +36,7 @@ class SHUTDOWNState(smach.State):
             except rospy.ROSException as e:
                 rospy.logerr(e)
             
+            print(action)
             if((action == ShutdownAction.SHUTDOWN) or (action == None)): #make service call to shutdown PC
                 os.system('sudo shutdown now -h')
                 """ try:

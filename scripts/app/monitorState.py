@@ -57,7 +57,7 @@ class MONITORState(smach.State):
             rospy.logerr("Service not avaialable: " + str(e))
             self.errStateTrigger(ErrCodes.SERVICE_NO_EXIST, e)
         
-        self.module_states = bitarray(2**3)
+        self.module_states = bitarray(8)
         self.agent_states = bitarray(6)
         self._mlock = threading.Lock() #acquisition control for modules
         self._alock = threading.Lock() # acquition control for statemachine
@@ -94,8 +94,8 @@ class MONITORState(smach.State):
                 0     |     1      |  2  |   3   |    4   |     5     |        6       |        7     
             LeftMotor | RightMotor | IMU | Lidar | Camera | WebServer | IRSensor Front | IRSensor Rear
         '''
-        time.sleep(3.0) #COMMENT WHEN RUNNING REAL
-        return
+        #time.sleep(3.0) #COMMENT WHEN RUNNING REAL
+        #return
         #motor status
         try:
             msg1 = rospy.wait_for_message(cfgContext['base_topic'], Status, timeout=2)
@@ -325,11 +325,12 @@ class MONITORState(smach.State):
                         self.launch_obj = data_obj.dataObject
                     if((data_obj.name == akeys.MOD_STATES)):
                         self._mlock.acquire()
-                        self.module_states[2:5] = data_obj.dataObject[1:5]
+                        self.module_states[1:6] = data_obj.dataObject[0:5]
                         self._mlock.release()
             
             #update module states and publish
             self.agent_status_msg.agentStatus = ba2int(self.agent_states)
+            print(len(self.module_states), ba2int(self.module_states))
             self.agent_status_msg.hardwareStatus = ba2int(self.module_states)
             self.agent_status_pub.publish(self.agent_status_msg)
             rate.sleep()
