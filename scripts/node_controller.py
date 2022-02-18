@@ -109,7 +109,7 @@ def request_handler(req):
     
     resp = NodeControllerServiceResponse()
     resp.result.data = True
-    resp.hardwareStatus = ba2int(node_states[:6])
+    resp.hardwareStatus = ba2int(node_states[:5])
     return resp
 
 
