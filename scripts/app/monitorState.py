@@ -31,7 +31,7 @@ class MONITORState(smach.State):
         self.cur_smstate = None
 
         #wait till node-controller is ready
-        nctl_ready = True #SET TO FALSE WHEN RUNNING REAL
+        nctl_ready = False #SET TO FALSE WHEN RUNNING REAL
         while(not nctl_ready):
             rospy.loginfo('MONITOR - waiting for Node controller ....')
             try:
@@ -44,14 +44,14 @@ class MONITORState(smach.State):
             time.sleep(0.1)
 
         try:
-            #rospy.wait_for_service('HARDWAREServer', timeout=5)
+            rospy.wait_for_service('HARDWAREServer', timeout=5)
             self.hdwClient = rospy.ServiceProxy('HARDWAREServer', HardwareService)
         except rospy.ROSException as e:
             rospy.logerr("Service not avaialable: " + str(e))
             self.errStateTrigger(ErrCodes.SERVICE_NO_EXIST, e)
         
         try:
-            #rospy.wait_for_service('DBUSServer', timeout=5)
+            rospy.wait_for_service('DBUSServer', timeout=5)
             self.dbusClient = rospy.ServiceProxy('DBUSServer', DBUSService)
         except rospy.ROSException as e:
             rospy.logerr("Service not avaialable: " + str(e))

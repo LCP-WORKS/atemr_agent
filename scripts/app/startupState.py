@@ -37,8 +37,8 @@ class STARTUPState(smach.State):
         node_ctlClient = rospy.ServiceProxy('NodeControllerServer', NodeControllerService)
 
         #UNCOMMENT FOR TESTING
-        nctlr_ready = True
-        node_states.setall(1)
+        #nctlr_ready = True
+        #node_states.setall(1)
         
         while(not rospy.is_shutdown()):
             rospy.loginfo("STARTUP running ....")
@@ -48,31 +48,34 @@ class STARTUPState(smach.State):
                 #module_states[8] = 1 if(checkAndActivateCANInterface()) else 0
 
             if(nctlr_ready):
-                #if(rospy.wait_for_service('NodeControllerServer', timeout=5)): #COMMENT FOR TESTING
+                try:
+                    rospy.wait_for_service('NodeControllerServer', timeout=5)#COMMENT FOR TESTING
                     # get hardware status by making an empty call to the server
-                    #resp = node_ctlClient.call(NodeControllerServiceRequest())
-                    #node_states = int2ba(resp.hardwareStatus)
+                    resp = node_ctlClient.call(NodeControllerServiceRequest())
+                    node_states = int2ba(resp.hardwareStatus)
 
-                #launch base with sensors
-                if(node_states.all() and module_states[8]):
-                    #module_states[2:5] = tmp_states[1:]
-                    outcome = 'success'
-                    break
-                else:
-                    if(cnt >= max_retries):
-                        rospy.logerr('Retries exhausted !!')
-                        outcome = 'failure'
+                    #launch base with sensors
+                    if(node_states.all() and module_states[8]):
+                        #module_states[2:5] = tmp_states[1:]
+                        outcome = 'success'
                         break
-                    rospy.loginfo('Modules initialization failure. Retry in a few seconds ...')
-                    #make call to restart basis
-                    if(rospy.wait_for_service('NodeControllerServer', timeout=5)):
+                    else:
+                        if(cnt >= max_retries):
+                            rospy.logerr('Retries exhausted !!')
+                            outcome = 'failure'
+                            break
+                        rospy.loginfo('Modules initialization failure. Retry in a few seconds ...')
+                        #make call to restart basis
+                        rospy.wait_for_service('NodeControllerServer', timeout=5)
                         req = NodeControllerServiceRequest()
                         req.is_basics.data = True
                         req.basics_action.data = True #restart
                         resp = node_ctlClient.call(req)
                         node_states = bitarray(resp.hardwareStatus)
-                    cnt += 1
-                time.sleep(3.0) #wait another 8 seconds before trying to restart the modules
+                except (rospy.ROSException, rospy.ServiceException) as e:
+                    rospy.logerr(e)
+                cnt += 1
+                time.sleep(3.0) #wait another 3 seconds before trying to restart the modules
             else: #check for READY message from NodeController
                 try:
                     msg = rospy.wait_for_message(cfgContext['node_controller_topic'], String, timeout=10)
