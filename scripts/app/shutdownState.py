@@ -36,8 +36,7 @@ class SHUTDOWNState(smach.State):
             except rospy.ROSException as e:
                 rospy.logerr(e)
             
-            print(action)
-            if((action == ShutdownAction.SHUTDOWN) or (action == None)): #make service call to shutdown PC
+            if((action.value == ShutdownAction.SHUTDOWN.value) or (action == None)): #make service call to shutdown PC
                 os.system('sudo shutdown now -h')
                 """ try:
                     req = HardwareServiceRequest()
@@ -49,7 +48,7 @@ class SHUTDOWNState(smach.State):
                         rospy.logerr('Failed to trigger shutdown')
                 except (rospy.ServiceException, rospy.ROSException) as e:
                     rospy.logerr('Service call failed: %s' % e) """
-            elif((action == ShutdownAction.RESTART)): #make service call to restart PC
+            elif((action.value == ShutdownAction.RESTART.value)): #make service call to restart PC
                 os.system('sudo reboot')
                 """ try:
                     req = HardwareServiceRequest()
