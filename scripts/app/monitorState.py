@@ -296,6 +296,9 @@ class MONITORState(smach.State):
                         #rospy.loginfo(data_obj.dataObject)
                         self.agent_status_msg.agentSMState.data = data_obj.dataObject.value
                         self.cur_smstate = data_obj.dataObject
+                        if(self.cur_smstate == astates.SDWN):
+                            rospy.loginfo('System going into shutdown (reboot)')
+                            break
                     #+++++++++++Acknowledge POWER ON on request from IDLE state
                     if((data_obj.name == akeys.TRIGR_ACK) and (data_obj.dataObject) and (not pwr_on_ACK)):
                         try:
