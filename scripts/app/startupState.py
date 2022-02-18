@@ -53,11 +53,10 @@ class STARTUPState(smach.State):
                     # get hardware status by making an empty call to the server
                     resp = node_ctlClient.call(NodeControllerServiceRequest())
                     node_states = int2ba(resp.hardwareStatus)
-                    rospy.loginfo(node_states)
-                    exit(-5)
+                    #rospy.loginfo(node_states)
 
-                    #launch base with sensors
-                    if(node_states.all() and module_states[8]):
+                    #launch base with sensors (124 ->  1111100)
+                    if((resp.hardwareStatus == 124) and module_states[8]):
                         #module_states[2:5] = tmp_states[1:]
                         outcome = 'success'
                         break
