@@ -15,8 +15,6 @@ class EXECState(smach.State):
         self.out_queue = outgoing_queue
         self.nav_result = None
         self.is_navigating = True
-        self.mb_client = actionlib.SimpleActionClient('move_base', MoveBaseAction)
-        self.goal_monitor_sub = rospy.Subscriber("/move_base/status", GoalStatusArray, self.monitor_goal)
 
     def monitor_goal(self, msg):
         #monitor feedback
@@ -31,6 +29,8 @@ class EXECState(smach.State):
 
     def execute(self, userdata):
         rospy.loginfo('Execution ...')
+        self.mb_client = actionlib.SimpleActionClient('move_base', MoveBaseAction)
+        self.goal_monitor_sub = rospy.Subscriber("/move_base/status", GoalStatusArray, self.monitor_goal)
         outcome = None
         rate = rospy.Rate(15)
 

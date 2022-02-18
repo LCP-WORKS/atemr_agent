@@ -13,7 +13,7 @@ import threading
 from multiprocessing import Pipe
 from bitarray import bitarray
 from bitarray.util import ba2int, int2ba
-from sensor_msgs.msg import Imu, LaserScan, PointCloud2
+from sensor_msgs.msg import Imu, LaserScan, Image
 from std_msgs.msg import Bool, String
 from atemr_msgs.msg import Status, WebStatus
 
@@ -58,7 +58,9 @@ class MONITORState(smach.State):
             self.errStateTrigger(ErrCodes.SERVICE_NO_EXIST, e)
         
         self.module_states = bitarray(8)
+        self.module_states.setall(0)
         self.agent_states = bitarray(6)
+        self.agent_states.setall(0)
         self._mlock = threading.Lock() #acquisition control for modules
         self._alock = threading.Lock() # acquition control for statemachine
         self.state_updater_thread = threading.Thread(target=self.internalMonitor, daemon=True)
@@ -78,9 +80,10 @@ class MONITORState(smach.State):
     #determine if connected to WiFi
     def checkWifiConnection(self): 
         try:
-            msg = rospy.wait_for_message(cfgContext['dbus_topic'], String, timeout=1)
+            msg = rospy.wait_for_message(cfgContext['dbus_topic'], String, timeout=5)
             self._alock.acquire()
-            self.agent_states[3] = 1 if((msg.data != '')) else 0
+            self.agent_states[3] = 0 if((msg.data == '')) else 1
+            #rospy.loginfo(self.agent_states)
             self._alock.release()
         except rospy.ROSException as e:
             rospy.logerr(e)
@@ -94,67 +97,68 @@ class MONITORState(smach.State):
                 0     |     1      |  2  |   3   |    4   |     5     |        6       |        7     
             LeftMotor | RightMotor | IMU | Lidar | Camera | WebServer | IRSensor Front | IRSensor Rear
         '''
-        #time.sleep(3.0) #COMMENT WHEN RUNNING REAL
-        #return
-        #motor status
-        try:
-            msg1 = rospy.wait_for_message(cfgContext['base_topic'], Status, timeout=2)
-            self._mlock.acquire()
-            self.module_states[0] = 1 if((msg1.motorID[0] == 0x141) and (msg1.state[0] != 0x09)) else 0
-            self.module_states[1] = 1 if((msg1.motorID[1] == 0x142) and (msg1.state[1] != 0x09)) else 0
-            self._mlock.release()
-            #emergency status
-            self._alock.acquire()
-            self.agent_states[5] = 1 if((msg1.is_emergency.data == True)) else 0
+        while(not rospy.is_shutdown()):
+            #time.sleep(3.0) #COMMENT WHEN RUNNING REAL
+            #return
+            #motor status
+            try:
+                msg1 = rospy.wait_for_message(cfgContext['base_topic'], Status, timeout=2)
+                self._mlock.acquire()
+                self.module_states[0] = 1 if((msg1.motorID[0] == 321) and (msg1.state[0] != 0x09)) else 0
+                self.module_states[1] = 1 if((msg1.motorID[1] == 322) and (msg1.state[1] != 0x09)) else 0
+                self._mlock.release()
+                #emergency status
+                self._alock.acquire()
+                self.agent_states[5] = 1 if((msg1.is_emergency.data == True)) else 0
+                self._alock.release()
+            except rospy.ROSException as e:
+                print(e)
+            
+            #imu status
+            try:
+                msg1 = rospy.wait_for_message(cfgContext['imu_topic'], Imu, timeout=2)
+                self._mlock.acquire()
+                self.module_states[2] = 1 if((msg1.header.frame_id == 'wt901_imu')) else 0
+                self._mlock.release()
+            except rospy.ROSException as e:
+                print(e)
+
+            #lidar status
+            try:
+                msg1 = rospy.wait_for_message(cfgContext['rplidar_topic'], LaserScan, timeout=2)
+                self._mlock.acquire()
+                self.module_states[3] = 1 if((msg1.header.frame_id == 'rplidar')) else 0
+                self._mlock.release()
+            except rospy.ROSException as e:
+                print(e)
+
+            #camera status
+            try:
+                msg1 = rospy.wait_for_message(cfgContext['image_topic'], Image, timeout=5)
+                self._mlock.acquire()
+                self.module_states[4] = 1 if((msg1.header.frame_id == 'camera_color_optical_frame')) else 0
+                self._mlock.release()
+            except rospy.ROSException as e:
+                print(e)
+            
+            #webserver status
+            try:
+                msg1 = rospy.wait_for_message(cfgContext['webserver_topic'], WebStatus, timeout=5)
+                self._mlock.acquire()
+                self.module_states[5] = 1
+                self._mlock.release()
+            except rospy.ROSException as e:
+                self._mlock.acquire()
+                self.module_states[5] = 0
+                self._mlock.release()
+                #print(e)
+            
+            self._alock.acquire() #upate agent hardware flag
+            self.agent_states[1] = 1 if(self.module_states.all()) else 0
             self._alock.release()
-        except rospy.ROSException as e:
-            print(e)
-        
-        #imu status
-        try:
-            msg1 = rospy.wait_for_message(cfgContext['imu_topic'], Imu, timeout=2)
-            self._mlock.acquire()
-            self.module_states[2] = 1 if((msg1.header.frame_id == 'wt901_imu')) else 0
-            self._mlock.release()
-        except rospy.ROSException as e:
-            print(e)
-
-        #lidar status
-        try:
-            msg1 = rospy.wait_for_message(cfgContext['rplidar_topic'], LaserScan, timeout=2)
-            self._mlock.acquire()
-            self.module_states[3] = 1 if((msg1.header.frame_id == 'rplidar')) else 0
-            self._mlock.release()
-        except rospy.ROSException as e:
-            print(e)
-
-        #camera status
-        try:
-            msg1 = rospy.wait_for_message(cfgContext['depth_topic'], PointCloud2, timeout=2)
-            self._mlock.acquire()
-            self.module_states[4] = 1 if((msg1.header.frame_id == 'camera_depth_optical_frame')) else 0
-            self._mlock.release()
-        except rospy.ROSException as e:
-            print(e)
-        
-        #webserver status
-        try:
-            msg1 = rospy.wait_for_message(cfgContext['webserver_topic'], WebStatus, timeout=2)
-            self._mlock.acquire()
-            self.module_states[5] = 1
-            self._mlock.release()
-        except rospy.ROSException as e:
-            self._mlock.acquire()
-            self.module_states[5] = 0
-            self._mlock.release()
-            #print(e)
-        
-        self._alock.acquire() #upate agent hardware flag
-        self.agent_states[1] = 1 if(self.module_states.all()) else 0
-        self._alock.release()
-        self.checkWifiConnection()
-        self.checkLocalized()
-        time.sleep(0.5)
+            self.checkWifiConnection()
+            self.checkLocalized()
+            time.sleep(2.0)
 
 
     def agentServe(self, req):
@@ -192,6 +196,7 @@ class MONITORState(smach.State):
             #if(req.canMove.data != self.prev_move_status):
                # self.errStateTrigger(ErrCodes.BASE_EMERGENCY if(not req.canMove.data) else ErrCodes.BASE_OK, '')
                 #  self.prev_move_status = req.canMove.data #update move variable
+        return AgentServiceResponse()
 
     def webuiServe(self, req):
         resp = WebServiceResponse()
@@ -304,7 +309,7 @@ class MONITORState(smach.State):
                         try:
                             req = HardwareServiceRequest()
                             req.powerON_ACK.data = True
-                            if(self.hdwServer(req)):
+                            if(self.hdwClient(req)):
                                 pwr_on_ACK = True
                         except rospy.ServiceException as exc:
                             print("Service did not process request: " + str(exc))
@@ -315,7 +320,7 @@ class MONITORState(smach.State):
                         try:
                             req = HardwareServiceRequest()
                             req.resetMotors.data = True
-                            self.hdwServer(req)
+                            self.hdwClient(req)
                         except rospy.ServiceException as exc:
                             print("Service did not process request: " + str(exc))
                             # trigger transition to ERROR State

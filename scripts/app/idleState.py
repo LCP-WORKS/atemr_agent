@@ -25,7 +25,7 @@ class IDLEState(smach.State):
         
         self.out_queue.put(StateData(akeys.SM_STATE, astates.IDL))
         # Trigger successful startup acknowledgement
-        #self.out_queue.put(StateData(akeys.TRIGR_ACK, True)) #UNCOMMENT WHEN RUNNING ON REAL
+        self.out_queue.put(StateData(akeys.TRIGR_ACK, True)) #UNCOMMENT WHEN RUNNING ON REAL
         while(not rospy.is_shutdown()):
             rospy.loginfo_throttle(3, "IDLE running ....")
             #check and process incoming data
@@ -36,7 +36,7 @@ class IDLEState(smach.State):
                         (sm_state, data) = msg_obj.dataObject
                         #process mapping
                         if(sm_state == astates.MAP):
-                            rospy.loginfo(data[0].value)
+                            #rospy.loginfo(data[0].value)
                             userdata.map_data_o = data
                             outcome = 'map'
                             break

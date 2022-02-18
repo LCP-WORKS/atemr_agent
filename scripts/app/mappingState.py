@@ -51,7 +51,7 @@ class MAPState(smach.State):
                 change_map_proxy = rospy.ServiceProxy('change_map', LoadMap)
                 map_url = os.path.join(self.mapPath, map_name, map_name + '.yaml')
                 resp = change_map_proxy(map_url)
-                return True if(resp.result == 0) else False
+                return True #if(resp.result == 0) else False
             except (rospy.ServiceException, rospy.ROSException) as e:
                 rospy.logerr(e)
         except (rospy.ServiceException, rospy.ROSException) as e:
