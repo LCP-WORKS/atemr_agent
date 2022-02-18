@@ -103,7 +103,7 @@ class MAPState(smach.State):
         except (rospy.ServiceException, rospy.ROSException) as e:
             rospy.logerr(e)
 
-        return False
+        return True
     
     def save_map(self, map_name):
         
@@ -150,7 +150,7 @@ class MAPState(smach.State):
                         rospy.logwarn('Received unknown from queue: %s' % msg_obj.name)
                     msg_obj = None
 
-            if(userdata.map_data_i[0] == MapAction.CHANGE_MAP):
+            if(userdata.map_data_i[0].value == MapAction.CHANGE_MAP.value):
                 res = self.change_map(userdata.map_data_i[1])
                 if(res):
                     outcome = 'success'
@@ -158,17 +158,19 @@ class MAPState(smach.State):
                 else:
                     outcome = 'failure'
                     break
-            if(userdata.map_data_i[0] == MapAction.BEGIN_NEW_MAP.value): #start the mapping node
+            if(userdata.map_data_i[0].value == MapAction.BEGIN_NEW_MAP.value): #start the mapping node
                 if(self.start_stop_mapping()):
                     is_making_map = True
                 else:
                     outcome = 'failure'
                     break
-                userdata.map_data_i[0] = None
+                userdata.map_data_i = None
             
             if(is_making_map):
                 rospy.loginfo("Is Mapping ....")
-
+            else:
+                outcome = 'failure'
+                break
             rate.sleep()
 
         return outcome

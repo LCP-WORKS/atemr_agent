@@ -12,7 +12,7 @@ from app.utils.robot_launcher import RobotLauncher, NodeType
 import time
 
 nodes_launcher = RobotLauncher()
-node_states = bitarray(7)
+node_states = bitarray(8)
 init = False
 
 def request_handler(req):

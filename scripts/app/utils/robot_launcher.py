@@ -250,7 +250,7 @@ class RobotLauncher:
 if __name__ == '__main__':
     rospy.init_node('launcher_test_node', anonymous=True)
     launcher = RobotLauncher()
-    m_states = bitarray(7)
+    m_states = bitarray(8)
     m_states.setall(0)
     m_states = launcher.run(module_states=m_states)
     time.sleep(10)
