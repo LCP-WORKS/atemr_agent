@@ -330,7 +330,6 @@ class MONITORState(smach.State):
             
             #update module states and publish
             self.agent_status_msg.agentStatus = ba2int(self.agent_states)
-            print(len(self.module_states), ba2int(self.module_states))
             self.agent_status_msg.hardwareStatus = ba2int(self.module_states)
             self.agent_status_pub.publish(self.agent_status_msg)
             rate.sleep()
