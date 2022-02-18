@@ -28,11 +28,12 @@ class MONITORState(smach.State):
         self.webui_srvr = rospy.Service('WebUIServer', WebService, self.webuiServe)
         self.agent_status_pub = rospy.Publisher(cfgContext['agent_topic'], AgentStatus, latch=True, queue_size=1)
         self.agent_status_msg = AgentStatus()
+        self.cur_smstate = None
 
         #wait till node-controller is ready
-        nctl_ready = False
+        nctl_ready = True #SET TO FALSE WHEN RUNNING REAL
         while(not nctl_ready):
-            rospy.loginf('MONITOR - waiting for Node controller ....')
+            rospy.loginfo('MONITOR - waiting for Node controller ....')
             try:
                 msg = rospy.wait_for_message(cfgContext['node_controller_topic'], String, timeout=10)
                 if(msg.data == 'READY'):
@@ -43,14 +44,14 @@ class MONITORState(smach.State):
             time.sleep(0.1)
 
         try:
-            rospy.wait_for_service('HARDWAREServer', timeout=5)
+            #rospy.wait_for_service('HARDWAREServer', timeout=5)
             self.hdwClient = rospy.ServiceProxy('HARDWAREServer', HardwareService)
         except rospy.ROSException as e:
             rospy.logerr("Service not avaialable: " + str(e))
             self.errStateTrigger(ErrCodes.SERVICE_NO_EXIST, e)
         
         try:
-            rospy.wait_for_service('DBUSServer', timeout=5)
+            #rospy.wait_for_service('DBUSServer', timeout=5)
             self.dbusClient = rospy.ServiceProxy('DBUSServer', DBUSService)
         except rospy.ROSException as e:
             rospy.logerr("Service not avaialable: " + str(e))
@@ -82,8 +83,7 @@ class MONITORState(smach.State):
             self.agent_states[3] = 1 if((msg.data != '')) else 0
             self._alock.release()
         except rospy.ROSException as e:
-            print(e)
-        
+            rospy.logerr(e)
 
     
     def internalMonitor(self):
@@ -94,6 +94,8 @@ class MONITORState(smach.State):
                 0     |     1      |  2  |   3   |    4   |     5     |        6       |        7     
             LeftMotor | RightMotor | IMU | Lidar | Camera | WebServer | IRSensor Front | IRSensor Rear
         '''
+        time.sleep(3.0) #COMMENT WHEN RUNNING REAL
+        return
         #motor status
         try:
             msg1 = rospy.wait_for_message(cfgContext['base_topic'], Status, timeout=2)
@@ -160,7 +162,7 @@ class MONITORState(smach.State):
         # check if robot can shutdown
         if(req.queryShutdown.data):
             resp = AgentServiceResponse()
-            if((self.agent_status_msg.agentSMState.data == astates.IDL.value)):
+            if((self.cur_smstate == astates.IDL)):
                 dbus_req = DBUSServiceRequest()
                 dbus_req.queryPower.data = True
                 dbus_resp = self.dbusClient.call(dbus_req)
@@ -194,15 +196,20 @@ class MONITORState(smach.State):
     def webuiServe(self, req):
         resp = WebServiceResponse()
         resp.canExecute.data = True
-        if(req.is_operator_action.data):
+        
+        if(req.is_operator_action.data and ((self.cur_smstate == astates.IDL) or (self.cur_smstate == astates.ERR))):
             '''state checks are performed in the web UI (browser side)'''
             if(req.initiateShutdown.data): #on_initiateShutdown: trigger transition to SHUTDOWN state (success)
-                self.outgoing_queue.put(StateData(akeys.TRIGR_STATE_EXTRA, (astates.SDWN, (ShutdownAction.SHUTDOWN, self.launch_obj)), astates.IDL))
+                self.outgoing_queue.put(StateData(akeys.TRIGR_STATE_EXTRA, (astates.SDWN, (ShutdownAction.SHUTDOWN, self.launch_obj)), self.cur_smstate))
             if(req.initiateRestart.data): #on_initiateRestart: trigger transition to SHUTDOWN state (restart)
-                self.outgoing_queue.put(StateData(akeys.TRIGR_STATE_EXTRA, (astates.SDWN, (ShutdownAction.RESTART, self.launch_obj)), astates.IDL))
+                self.outgoing_queue.put(StateData(akeys.TRIGR_STATE_EXTRA, (astates.SDWN, (ShutdownAction.RESTART, self.launch_obj)), self.cur_smstate))
+        elif(req.is_operator_action.data and ((self.cur_smstate != astates.IDL) or (self.cur_smstate != astates.ERR))):
+                resp.canExecute.data = False
+                resp.rejectReason.data = 'Error occurred | Code: ' + ErrCodes.STATE_MISMATCH
+                return resp
             
         # toggle man-auto modes
-        if(req.is_man_auto.data):
+        if(req.is_man_auto.data and ((self.cur_smstate == astates.IDL) or (self.cur_smstate == astates.ERR))):
             if(req.manAuto == MODE.MANUAL.value): #publish keyboard priority
                 mpub = rospy.Publisher('/manual_lock', Bool, latch=True, queue_size=1)
                 apub = rospy.Publisher('/auto_lock', Bool, latch=True, queue_size=1)
@@ -219,7 +226,12 @@ class MONITORState(smach.State):
                 self._alock.acquire()
                 self.agent_states[2] = 1
                 self._alock.release()
+        elif(req.is_man_auto.data and ((self.cur_smstate != astates.IDL) or (self.cur_smstate != astates.ERR))):
+                resp.canExecute.data = False
+                resp.rejectReason.data = 'Error occurred | Code: ' + ErrCodes.STATE_MISMATCH
+                return resp
         
+        # image capture / video stream commands
         if(req.is_stream.data):
             # capture image
             self.parent_conn.send(StateData(akeys.IMG_STRM, req.captureImage.data))
@@ -227,17 +239,29 @@ class MONITORState(smach.State):
             self.parent_conn.send(StateData(akeys.VID_STRM, req.captureVideo))
         
         # trigger map_actions
-        if(req.is_map_action.data): 
+        if((req.is_map_action.data) and (self.cur_smstate == astates.IDL)): 
             self.outgoing_queue.put(StateData(akeys.TRIGR_STATE_EXTRA, (astates.MAP, (MapAction(req.mapAction), req.mapName.data)), astates.IDL))
+        elif((req.is_map_action.data) and (self.cur_smstate == astates.MAP)): 
+            self.outgoing_queue.put(StateData(akeys.TRIGR_STATE_EXTRA, (astates.IDL, (MapAction(req.mapAction), req.mapName.data)), astates.MAP))
+        elif((req.is_map_action.data) and ((self.cur_smstate != astates.MAP) or (self.cur_smstate != astates.IDL))):
+            resp.canExecute.data = False
+            resp.rejectReason.data = 'Error occurred | Code: ' + ErrCodes.STATE_MISMATCH
+            return resp
+        
         # trigger goal execution
-        if((req.is_goal_action.data) and (self.agent_status_msg.agentSMState.data == astates.IDL.value)):
-            self.outgoing_queue.put(StateData(akeys.TRIGR_STATE_EXTRA, (astates.EXC, req.goal), astates.IDL))
-        if((req.is_goal_action.data) and (self.agent_status_msg.agentSMState.data == astates.EXC.value)):
-            self.outgoing_queue.put(StateData(akeys.TRIGR_STATE_EXTRA, (astates.IDL, req.cancel_goal), astates.EXC))
+        if((req.is_goal_action.data) and (self.cur_smstate == astates.IDL)):
+            self.outgoing_queue.put(StateData(akeys.TRIGR_STATE, astates.IDL))
+        elif((req.is_goal_action.data) and (self.cur_smstate == astates.EXC)):
+            self.outgoing_queue.put(StateData(akeys.TRIGR_STATE_EXTRA, (astates.IDL, req.cancel_goal.data), astates.EXC))
+        elif((req.is_goal_action.data) and ((self.cur_smstate != astates.IDL) or (self.cur_smstate != astates.EXC))):
+            resp.canExecute.data = False
+            resp.rejectReason.data = 'Error occurred | Code: ' + ErrCodes.STATE_MISMATCH
+            return resp
+        
         return resp
 
     def errStateTrigger(self, code, err):
-        if(self.agent_status_msg.agentSMState.data == astates.IDL.value):
+        if(self.cur_smstate == astates.IDL):
             if(code == ErrCodes.BASE_EMERGENCY):
                 self.outgoing_queue.put(StateData(akeys.TRIGR_STATE, astates.ERR, astates.IDL))
                 self.outgoing_queue.put(StateData(akeys.ERR_OBJ, (code, 'Base blocked!'), astates.ERR))
@@ -245,14 +269,14 @@ class MONITORState(smach.State):
                 self.outgoing_queue.put(StateData(akeys.TRIGR_STATE, astates.ERR, astates.IDL))
                 self.outgoing_queue.put(StateData(akeys.ERR_OBJ, (code, err), astates.ERR))
         
-        elif(self.agent_status_msg.agentSMState.data == astates.ERR.value):
+        elif(self.cur_smstate == astates.ERR):
             if(code == ErrCodes.BASE_EMERGENCY):
                 self.outgoing_queue.put(StateData(akeys.ERR_OBJ, (code, 'Base blocked!'), astates.ERR))
             if(code == ErrCodes.BASE_OK):
                 self.outgoing_queue.put(StateData(akeys.TRIGR_STATE, astates.IDL, astates.ERR))
         
         else: #any other state
-            print('ERROR -> %d | %s' % (code.value, str(err)))        
+            rospy.logerr('ERROR -> %d | %s' % (code.value, str(err)))        
 
 
     def execute(self, userdata):
@@ -262,14 +286,16 @@ class MONITORState(smach.State):
         pwr_on_ACK = False
 
         while(not rospy.is_shutdown()):
-            rospy.loginfo_throttle(1, "MONITOR running ....")
+            rospy.loginfo_throttle(3, "MONITOR running ....")
 
             #check and process incoming data
             if(not self.incoming_queue.empty()):
                 data_obj = sdataDecoder(self.incoming_queue, astates.MON)
                 if(data_obj is not None): #process received queue data here
                     if((data_obj.name == akeys.SM_STATE)):
+                        #rospy.loginfo(data_obj.dataObject)
                         self.agent_status_msg.agentSMState.data = data_obj.dataObject.value
+                        self.cur_smstate = data_obj.dataObject
                     #+++++++++++Acknowledge POWER ON on request from IDLE state
                     if((data_obj.name == akeys.TRIGR_ACK) and (data_obj.dataObject) and (not pwr_on_ACK)):
                         try:

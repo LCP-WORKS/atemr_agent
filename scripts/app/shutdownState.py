@@ -13,37 +13,49 @@ class SHUTDOWNState(smach.State):
         smach.State.__init__(self, outcomes=['success', 'restart'], input_keys=['shutdown_action_i'])
         self.in_queue = incoming_queue
         self.out_queue = outgoing_queue
-        self.out_queue.put(StateData(akeys.SM_STATE, astates.SDWN))
+        self.hdwServer = rospy.ServiceProxy('HARDWAREServer', HardwareService)
 
     def execute(self, userdata):
         rospy.loginfo('Shutdown ...')
         action = userdata.shutdown_action_i
+        outcome = 'success'
         node_ctlClient = rospy.ServiceProxy('NodeControllerServer', NodeControllerService)
 
+        self.out_queue.put(StateData(akeys.SM_STATE, astates.SDWN))
         while(not rospy.is_shutdown()):
             rospy.loginfo("SHUTDOWN running ....")
-            if((action == ShutdownAction.SHUTDOWN) or (action == None)):
-                #make service call to shutdown
+            if((action == ShutdownAction.SHUTDOWN) or (action == None)): #make service call to shutdown PC
                 try:
-                    hdwServer = rospy.ServiceProxy('HARDWAREServer', HardwareService)
                     req = HardwareServiceRequest()
                     req.shutdownSystem.data = True
-                    if(hdwServer(req)):
-                        time.sleep(4.0)
-                except rospy.ServiceException as e:
-                    print('Service call failed: %s' % e)
+                    resp = self.hdwServer(req)
+                    if(resp.result.data):
+                        break
+                    else:
+                        rospy.logerr('Failed to trigger shutdown')
+                except (rospy.ServiceException, rospy.ROSException) as e:
+                    rospy.logerr('Service call failed: %s' % e)
+            elif((action == ShutdownAction.RESTART)): #make service call to restart PC
+                try:
+                    req = HardwareServiceRequest()
+                    req.restartSystem.data = True
+                    resp = self.hdwServer(req)
+                    if(resp.result.data):
+                        break
+                    else:
+                        rospy.logerr('Failed to trigger restart')
+                except (rospy.ServiceException, rospy.ROSException) as e:
+                    rospy.logerr('Service call failed: %s' % e)
 
             #kill all launches
-            if(rospy.wait_for_service('NodeControllerServer', timeout=5)):
+            try:
+                rospy.wait_for_service('NodeControllerServer', timeout=5)
                 req = NodeControllerServiceRequest()
                 req.is_basics.data = True
                 req.basics_action.data = False #terminate
-                resp = node_ctlClient.call(req)
-            if(action == ShutdownAction.RESTART):
-                time.sleep(5.0)
-                outcome = 'restart'
+                node_ctlClient.call(req)
                 break
-            else:
-                outcome = 'success'
-                break
+            except rospy.ROSException as e:
+                rospy.logerr(e)
+        
         return outcome

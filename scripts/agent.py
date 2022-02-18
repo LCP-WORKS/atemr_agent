@@ -9,7 +9,8 @@ import app.shutdownState
 import app.monitorState
 import rospy
 
-import smach
+import smach, smach_ros
+from smach.exceptions import InvalidStateError, InvalidTransitionError, InvalidConstructionError, InvalidUserCodeError
 from multiprocessing import Queue
 from queue import Empty
 
@@ -81,8 +82,17 @@ def main():
         smach.Concurrence.add('RUNNING_SM', sm_run)
         smach.Concurrence.add('MONITOR', app.monitorState.MONITORState(incoming_queue=states_to_monitor_queue, outgoing_queue=monitor_to_states_queue)) #monitoring state goes here
 
-    # Execute SMACH plan
-    outcome = sm_con.execute()
+    # Create and start the introspection server
+    #sis = smach_ros.IntrospectionServer('atemr_agent_sm', sm_con, '/SM_ROOT')
+    #sis.start()
+    try:
+        # Execute SMACH plan
+        outcome = sm_con.execute()
+        #stop the introspection server
+        #sis.stop()
+    except (InvalidUserCodeError, InvalidConstructionError, InvalidStateError, InvalidTransitionError) as e:
+        print(e)
+        #sis.stop()
 
 
 if __name__ == '__main__':

@@ -18,6 +18,8 @@ class NodeType(Enum):
     CAMERA = 3
     RLOC_ODOM = 4
     RLOC_WORLD = 5
+    MAPSERVER = 6
+    MAPPING = 7
 
 class RobotLauncher:
     def __init__(self):
@@ -30,6 +32,9 @@ class RobotLauncher:
         self.camera_launch = roslaunch.parent.ROSLaunchParent(self.uuid, [rospack.get_path('atemr_hardware') + '/launch/camera.launch'])
         self.rloc_odom_launch = roslaunch.parent.ROSLaunchParent(self.uuid, [rospack.get_path('atemr_localization') + '/launch/rloc_odom.launch'])
         self.rloc_world_launch = roslaunch.parent.ROSLaunchParent(self.uuid, [rospack.get_path('atemr_localization') + '/launch/rloc_world.launch'])
+        self.nav_launch = roslaunch.parent.ROSLaunchParent(self.uuid, [rospack.get_path('atemr_nav') + '/launch/atemr_nav.launch']) # goes with rloc_world
+        self.mapserver_launch = roslaunch.parent.ROSLaunchParent(self.uuid, [rospack.get_path('atemr_localization') + '/launch/map_server.launch'])
+        self.mapping_launch = roslaunch.parent.ROSLaunchParent(self.uuid, [rospack.get_path('atemr_localization') + '/launch/slam_gmapping.launch'])
 
     def launch_base(self, terminate=False):
         if(not terminate):
@@ -37,7 +42,7 @@ class RobotLauncher:
             self.base_launch.start()
         else:
             self.base_launch.shutdown()
-        time.sleep(3.0)
+        time.sleep(1.5)
     
     def launch_imu(self, terminate=False):
         if(not terminate):
@@ -69,19 +74,38 @@ class RobotLauncher:
             self.rloc_odom_launch.start()
         else:
             self.rloc_odom_launch.shutdown()
-        time.sleep(3.0)
+        time.sleep(1.0)
     
     def launch_rloc_world(self, terminate=False):
         if(not terminate):
             self.rloc_world_launch = roslaunch.parent.ROSLaunchParent(self.uuid, [rospack.get_path('atemr_localization') + '/launch/rloc_world.launch'])
+            self.nav_launch = roslaunch.parent.ROSLaunchParent(self.uuid, [rospack.get_path('atemr_nav') + '/launch/atemr_nav.launch'])
             self.rloc_world_launch.start()
+            time.sleep(2.5)
+            self.nav_launch.start()
         else:
+            self.nav_launch.shutdown()
             self.rloc_world_launch.shutdown()
-        time.sleep(2.0)
+        time.sleep(1.0)
+    
+    def launch_mapping(self, terminate=False):
+        if(not terminate):
+            self.mapping_launch = roslaunch.parent.ROSLaunchParent(self.uuid, [rospack.get_path('atemr_localization') + '/launch/slam_gmapping.launch'])
+            self.mapping_launch.start()
+        else:
+            self.mapping_launch.shutdown()
+        time.sleep(1.0)
+    
+    def launch_mapserver(self, terminate=False):
+        if(not terminate):
+            self.mapserver_launch = roslaunch.parent.ROSLaunchParent(self.uuid, [rospack.get_path('atemr_localization') + '/launch/map_server.launch'])
+            self.mapserver_launch.start()
+        else:
+            self.mapserver_launch.shutdown()
+        time.sleep(1.0)
 
-
+    ''' Checks if all basics nodes required for minimal function are up and running'''
     def run(self, module_states):
-        #begin checks
         #check BASE
         if(module_states[0] == 0):
             self.launch_base()
@@ -184,7 +208,14 @@ class RobotLauncher:
         else: # complete shutdown
             if(ba2int(module_states) == 0):
                 return module_states
-
+            try:
+                self.launch_mapping(terminate=True)
+            except ROSException as e:
+                print(e)
+            try:
+                self.launch_mapserver(terminate=True)
+            except ROSException as e:
+                print(e)
             try:
                 self.launch_rloc_world(terminate=True)
             except ROSException as e:
@@ -219,7 +250,7 @@ class RobotLauncher:
 if __name__ == '__main__':
     rospy.init_node('launcher_test_node', anonymous=True)
     launcher = RobotLauncher()
-    m_states = bitarray(5)
+    m_states = bitarray(7)
     m_states.setall(0)
     m_states = launcher.run(module_states=m_states)
     time.sleep(10)

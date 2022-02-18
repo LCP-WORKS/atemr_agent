@@ -2,7 +2,7 @@
  
 import rospy
 import smach
-import smach_ros
+import pickle
 from app.utils.helper import StateData, sdataDecoder, AgentKeys as akeys,\
                             AgentStates as astates, ErrCodes
 
@@ -12,8 +12,6 @@ class IDLEState(smach.State):
                                    output_keys=['goal_obj_o', 'map_data_o', 'err_obj_o', 'shutdown_action_o'])
         self.in_queue = incoming_queue
         self.out_queue = outgoing_queue
-        self.out_queue.put(StateData(akeys.SM_STATE, astates.IDL))
-        #rospy.init_node('sm_idle_node')
 
     def execute(self, userdata):
         rospy.loginfo('Idling ...')
@@ -25,29 +23,26 @@ class IDLEState(smach.State):
         userdata.err_obj_o = None
         userdata.shutdown_action_o = None
         
+        self.out_queue.put(StateData(akeys.SM_STATE, astates.IDL))
         # Trigger successful startup acknowledgement
-        self.out_queue.put(StateData(akeys.TRIGR_ACK, True))
+        #self.out_queue.put(StateData(akeys.TRIGR_ACK, True)) #UNCOMMENT WHEN RUNNING ON REAL
         while(not rospy.is_shutdown()):
-            rospy.loginfo("IDLE running ....")
+            rospy.loginfo_throttle(3, "IDLE running ....")
             #check and process incoming data
             if(not self.in_queue.empty()):
                 msg_obj = sdataDecoder(self.in_queue, astates.IDL)
                 if(msg_obj is not None): #process received queue data here
                     if(msg_obj.name == akeys.TRIGR_STATE_EXTRA):
                         (sm_state, data) = msg_obj.dataObject
-                        #process navigation
-                        if(sm_state == astates.EXC):
-                            userdata.goal_obj = data
-                            outcome = 'nav'
-                            break
                         #process mapping
                         if(sm_state == astates.MAP):
-                            userdata.map_data = data
+                            rospy.loginfo(data[0].value)
+                            userdata.map_data_o = data
                             outcome = 'map'
                             break
                         #process shutdown
                         if(sm_state == astates.SDWN):
-                            userdata.shutdown_action = data[0]
+                            userdata.shutdown_action_o = data[0]
                             #userdata.launch_obj = data[1]
                             outcome = 'sdown'
                             break
@@ -58,6 +53,10 @@ class IDLEState(smach.State):
                             break
                     elif(msg_obj.name == akeys.TRIGR_STATE):
                         sm_state = msg_obj.dataObject
+                        #process navigation
+                        if(sm_state == astates.EXC):
+                            outcome = 'nav'
+                            break
                         #process error
                         if(sm_state == astates.ERR):
                             outcome = 'err'
@@ -66,11 +65,12 @@ class IDLEState(smach.State):
                             rospy.logwarn('Received unknown from queue: %s' % msg_obj.name)
                     else:
                         rospy.logwarn('Received unknown from queue: %s' % msg_obj.name)
+                msg_obj = None
 
 
             rate.sleep()
         if(outcome == None): #catch limbo fallthroughs
-            outcome = 'err'
+            outcome = 'run_complete' # change to 'err' when running real
             self.in_queue.put(StateData(akeys.ERR_OBJ, 
                                         (ErrCodes.STATE_FALLTHROUGH, 'Unstable state: IDLE'), astates.ERR))
         return outcome

@@ -12,7 +12,7 @@ from app.utils.robot_launcher import RobotLauncher, NodeType
 import time
 
 nodes_launcher = RobotLauncher()
-node_states = bitarray(5)
+node_states = bitarray(7)
 init = False
 
 def request_handler(req):
@@ -86,6 +86,26 @@ def request_handler(req):
         else:
             nodes_launcher.launch_rloc_world(True)
             node_states[NodeType.RLOC_WORLD.value] = 0
+    
+    if(req.is_mapserver.data):
+        if(req.mapserver_action.data): #start/restart
+            if(node_states[NodeType.MAPSERVER.value] == 1):
+                nodes_launcher.launch_mapserver(True)
+            nodes_launcher.launch_mapserver(False)
+            node_states[NodeType.MAPSERVER.value] = 1
+        else:
+            nodes_launcher.launch_mapserver(True)
+            node_states[NodeType.MAPSERVER.value] = 0
+
+    if(req.is_mapping.data):
+        if(req.mapping_action.data): #start/restart
+            if(node_states[NodeType.MAPPING.value] == 1):
+                nodes_launcher.launch_mapping(True)
+            nodes_launcher.launch_mapping(False)
+            node_states[NodeType.MAPPING.value] = 1
+        else:
+            nodes_launcher.launch_mapping(True)
+            node_states[NodeType.MAPPING.value] = 0
     
     resp = NodeControllerServiceResponse()
     resp.result.data = True

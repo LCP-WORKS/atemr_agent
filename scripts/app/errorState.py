@@ -14,14 +14,13 @@ class ERRORState(smach.State):
         smach.State.__init__(self, outcomes=['success', 'failure'], input_keys=['err_obj_i'], output_keys=['shutdown_action_o'])
         self.in_queue = incoming_queue
         self.out_queue = outgoing_queue
-        self.out_queue.put(StateData(akeys.SM_STATE, astates.ERR))
-        #rospy.init_node('sm_err_node')
 
     def execute(self, userdata):
         rospy.loginfo('Error ...')
         rate = rospy.Rate(1)
         cnt = 0
 
+        self.out_queue.put(StateData(akeys.SM_STATE, astates.ERR))
         while(not rospy.is_shutdown()):
             rospy.loginfo("ERROR running ....")
             rate.sleep()

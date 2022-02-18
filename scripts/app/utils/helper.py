@@ -1,21 +1,8 @@
 #! /usr/bin/env python3
 
 from enum import Enum
-import enum
 from typing import NamedTuple
 
-class StateData(NamedTuple):
-    name: object
-    dataObject: object
-    destinationState: object = 'MONITOR'
-
-def sdataDecoder(state_queue, state):
-    data = state_queue.get(False)
-    if(data.destinationState == state):
-        return data
-    else:
-        state_queue.put(data)
-        return None
 
 class AgentStates(Enum):
     SUP = 'STARTUP'
@@ -25,6 +12,19 @@ class AgentStates(Enum):
     ERR = 'ERROR'
     SDWN = 'SHUTDOWN'
     MON = 'MONITOR'
+
+class StateData(NamedTuple):
+    name: object
+    dataObject: object
+    destinationState: object = AgentStates.MON
+
+def sdataDecoder(state_queue, state):
+    data = state_queue.get(False)
+    if(data.destinationState == state):
+        return data
+    else:
+        state_queue.put(data)
+        return None
 
 class AgentKeys(Enum):
     TRIGR_ACK = 'trigger_acknowledgement'
@@ -42,6 +42,7 @@ class ErrCodes(Enum):
     BASE_OK = 5000
     BASE_EMERGENCY = 5001
     STATE_FALLTHROUGH = 5002
+    STATE_MISMATCH = 5003
 
     SERVICE_NO_EXIST = 5020
     SERVICE_CALL_FAIL = 5021
@@ -51,8 +52,10 @@ class ShutdownAction(Enum):
     RESTART = 1
 
 class MapAction(Enum):
-    NEW = 31
-    CHANGE = 32
+    BEGIN_NEW_MAP = 31
+    CHANGE_MAP = 32
+    SAVE_NEW_MAP = 33
+    DISCARD_NEW_MAP = 34
 
 class MODE(Enum):
     MANUAL = 1

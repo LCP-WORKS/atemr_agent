@@ -30,11 +30,15 @@ class STARTUPState(smach.State):
         '''
         module_states = bitarray(9)
         module_states.setall(0)
-        node_states = bitarray(5)
+        node_states = bitarray(7)
         node_states.setall(0)
         outcome = None
         nctlr_ready = False
         node_ctlClient = rospy.ServiceProxy('NodeControllerServer', NodeControllerService)
+
+        #UNCOMMENT FOR TESTING
+        nctlr_ready = True
+        node_states.setall(1)
         
         while(not rospy.is_shutdown()):
             rospy.loginfo("STARTUP running ....")
@@ -44,11 +48,10 @@ class STARTUPState(smach.State):
                 #module_states[8] = 1 if(checkAndActivateCANInterface()) else 0
 
             if(nctlr_ready):
-                if(rospy.wait_for_service('NodeControllerServer', timeout=5)):
-                    
+                #if(rospy.wait_for_service('NodeControllerServer', timeout=5)): #COMMENT FOR TESTING
                     # get hardware status by making an empty call to the server
-                    resp = node_ctlClient.call(NodeControllerServiceRequest())
-                    node_states = int2ba(resp.hardwareStatus)
+                    #resp = node_ctlClient.call(NodeControllerServiceRequest())
+                    #node_states = int2ba(resp.hardwareStatus)
 
                 #launch base with sensors
                 if(node_states.all() and module_states[8]):
@@ -79,7 +82,7 @@ class STARTUPState(smach.State):
                     print(e)
         
         #userdata.module_states = module_states[:7]
-        userdata.shutdown_action = ShutdownAction.SHUTDOWN
+        userdata.shutdown_action_o = ShutdownAction.SHUTDOWN
         #self.out_queue.put(StateData(akeys.LNCH_OBJ, self.launcher))
         self.out_queue.put(StateData(akeys.MOD_STATES, node_states))
         return outcome
