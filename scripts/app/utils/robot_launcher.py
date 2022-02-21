@@ -90,7 +90,7 @@ class RobotLauncher:
     
     def launch_mapping(self, terminate=False):
         if(not terminate):
-            self.mapping_launch = roslaunch.parent.ROSLaunchParent(self.uuid, [rospack.get_path('atemr_localization') + '/launch/slam_gmapping.launch'])
+            self.mapping_launch = roslaunch.parent.ROSLaunchParent(self.uuid, [rospack.get_path('atemr_localization') + '/launch/hmapping.launch'])
             self.mapping_launch.start()
         else:
             self.mapping_launch.shutdown()
