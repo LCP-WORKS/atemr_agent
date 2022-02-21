@@ -34,7 +34,7 @@ class RobotLauncher:
         self.rloc_world_launch = roslaunch.parent.ROSLaunchParent(self.uuid, [rospack.get_path('atemr_localization') + '/launch/rloc_world.launch'])
         self.nav_launch = roslaunch.parent.ROSLaunchParent(self.uuid, [rospack.get_path('atemr_nav') + '/launch/atemr_nav.launch']) # goes with rloc_world
         self.mapserver_launch = roslaunch.parent.ROSLaunchParent(self.uuid, [rospack.get_path('atemr_localization') + '/launch/map_server.launch'])
-        self.mapping_launch = roslaunch.parent.ROSLaunchParent(self.uuid, [rospack.get_path('atemr_localization') + '/launch/slam_gmapping.launch'])
+        self.mapping_launch = roslaunch.parent.ROSLaunchParent(self.uuid, [rospack.get_path('atemr_localization') + '/launch/hmapping.launch'])
 
     def launch_base(self, terminate=False):
         if(not terminate):
