@@ -55,8 +55,8 @@ class STARTUPState(smach.State):
                     node_states = int2ba(resp.hardwareStatus)
                     #rospy.loginfo(node_states)
 
-                    #launch base with sensors (124 ->  1111100)
-                    if((resp.hardwareStatus == 124) and module_states[8]):
+                    #launch base with sensors (248 ->  11111000)
+                    if((resp.hardwareStatus == 248) and module_states[8]):
                         #module_states[2:5] = tmp_states[1:]
                         outcome = 'success'
                         break
