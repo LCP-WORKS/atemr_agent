@@ -164,23 +164,19 @@ class MONITORState(smach.State):
             
 
     def checkLocalized(self):
-        is_localized = False 
         try:
             msg = rospy.wait_for_message(cfgContext['loc_topic'], PoseWithCovarianceStamped, timeout=2)
             cov = msg.pose.covariance # array of 36
             if((abs(cov[0]) <= 0.08) and (abs(cov[1]) <= 0.01) and (abs(cov[6]) <= 0.01) and (abs(cov[7]) <= 0.01) and (abs(cov[35]) <= 0.01)):
-                is_localized = True
+                self._alock.acquire()
+                self.agent_states[4] = 1
+                self._alock.release()
             else:
-                is_localized = False
+                self._alock.acquire()
+                self.agent_states[4] = 0
+                self._alock.release()
         except rospy.ROSException as e:
             pass
-
-        if(self.agent_states[4] == 0 and not is_localized):
-            pass
-        else:
-            self._alock.acquire()
-            self.agent_states[4] = 1 if(is_localized) else 0 #simulated localization
-            self._alock.release()
 
     #determine if connected to WiFi
     def checkWifiConnection(self): 
