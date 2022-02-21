@@ -168,7 +168,7 @@ class MONITORState(smach.State):
         try:
             msg = rospy.wait_for_message(cfgContext['loc_topic'], PoseWithCovarianceStamped, timeout=2)
             cov = msg.pose.covariance # array of 36
-            if((abs(cov[0]) <= 0.03) and (abs(cov[1]) <= 0.01) and (abs(cov[6]) <= 0.01) and (abs(cov[7]) <= 0.01) and (abs(cov[35]) <= 0.01)):
+            if((abs(cov[0]) <= 0.08) and (abs(cov[1]) <= 0.01) and (abs(cov[6]) <= 0.01) and (abs(cov[7]) <= 0.01) and (abs(cov[35]) <= 0.01)):
                 is_localized = True
             else:
                 is_localized = False
