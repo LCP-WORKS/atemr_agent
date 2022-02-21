@@ -69,6 +69,7 @@ class MONITORState(smach.State):
         self.agent_states.setall(0)
         self._mlock = threading.Lock() #acquisition control for modules
         self._alock = threading.Lock() # acquition control for statemachine
+        self.can_run = True
         self.state_updater_thread = threading.Thread(target=self.internalMonitor, daemon=True)
         self.state_updater_thread.start()
         #self.sys_ops_thread = threading.Thread(target=self.systemOps, daemon=True)
@@ -198,7 +199,7 @@ class MONITORState(smach.State):
                 0     |     1      |  2  |   3   |    4   |     5     |        6       |        7     
             LeftMotor | RightMotor | IMU | Lidar | Camera | WebServer | IRSensor Front | IRSensor Rear
         '''
-        while(not rospy.is_shutdown()):
+        while(not rospy.is_shutdown() and self.can_run):
             #time.sleep(3.0) #COMMENT WHEN RUNNING REAL
             #return
             #motor status
@@ -213,7 +214,8 @@ class MONITORState(smach.State):
                 self.agent_states[5] = 1 if((msg1.is_emergency.data == True)) else 0
                 self._alock.release()
             except rospy.ROSException as e:
-                print(e)
+                #print(e)
+                pass
             
             #imu status
             try:
@@ -222,7 +224,8 @@ class MONITORState(smach.State):
                 self.module_states[2] = 1 if((msg1.header.frame_id == 'wt901_imu')) else 0
                 self._mlock.release()
             except rospy.ROSException as e:
-                print(e)
+                #print(e)
+                pass
 
             #lidar status
             try:
@@ -231,7 +234,8 @@ class MONITORState(smach.State):
                 self.module_states[3] = 1 if((msg1.header.frame_id == 'rplidar')) else 0
                 self._mlock.release()
             except rospy.ROSException as e:
-                print(e)
+                #print(e)
+                pass
 
             #camera status
             try:
@@ -240,7 +244,8 @@ class MONITORState(smach.State):
                 self.module_states[4] = 1 if((msg1.header.frame_id == 'camera_color_optical_frame')) else 0
                 self._mlock.release()
             except rospy.ROSException as e:
-                print(e)
+                #print(e)
+                pass
             
             #webserver status
             try:
@@ -442,5 +447,6 @@ class MONITORState(smach.State):
             self.agent_status_msg.hardwareStatus = ba2int(self.module_states)
             self.agent_status_pub.publish(self.agent_status_msg)
             rate.sleep()
-
+        
+        self.can_run = False
         return 'success'
