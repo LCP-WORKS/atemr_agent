@@ -105,7 +105,7 @@ class MONITORState(smach.State):
 
     def as_execute_cb(self, goal):
         #check if move_base action server is running
-        if(self.mb_client.wait_for_server(timeout=5) and (self.cur_smstate == astates.IDL)):
+        if(self.mb_client.wait_for_server(timeout=rospy.Duration(5.0)) and (self.cur_smstate == astates.IDL)):
             #change to EXC state if current state is IDL
             self.outgoing_queue.put(StateData(akeys.TRIGR_STATE, astates.EXC, astates.IDL))
             #wait till EXC is achieved
