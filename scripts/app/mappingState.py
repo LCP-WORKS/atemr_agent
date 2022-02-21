@@ -159,12 +159,13 @@ class MAPState(smach.State):
                     outcome = 'failure'
                     break
             if(userdata.map_data_i[0].value == MapAction.BEGIN_NEW_MAP.value): #start the mapping node
-                if(self.start_stop_mapping()):
-                    is_making_map = True
-                else:
-                    outcome = 'failure'
-                    break
-                userdata.map_data_i = None
+                if(not is_making_map):
+                    if(self.start_stop_mapping()):
+                        is_making_map = True
+                    else:
+                        outcome = 'failure'
+                        break
+                #userdata.map_data_i = None
             
             if(is_making_map):
                 rospy.loginfo("Is Mapping ....")
