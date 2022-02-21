@@ -16,6 +16,11 @@ from bitarray.util import ba2int, int2ba
 from sensor_msgs.msg import Imu, LaserScan, Image
 from std_msgs.msg import Bool, String
 from atemr_msgs.msg import Status, WebStatus
+from geometry_msgs.msg import PoseWithCovarianceStamped
+
+import actionlib
+from move_base_msgs.msg import MoveBaseAction, MoveBaseActionFeedback, MoveBaseActionResult, MoveBaseFeedback
+from actionlib_msgs.msg import GoalStatus
 
 class MONITORState(smach.State):
     def __init__(self, incoming_queue, outgoing_queue):
@@ -27,6 +32,7 @@ class MONITORState(smach.State):
         self.agent_srvr = rospy.Service('AgentServer', AgentService, self.agentServe)
         self.webui_srvr = rospy.Service('WebUIServer', WebService, self.webuiServe)
         self.agent_status_pub = rospy.Publisher(cfgContext['agent_topic'], AgentStatus, latch=True, queue_size=1)
+        self.atemr_server = actionlib.SimpleActionServer(cfgContext['monitor_server'], MoveBaseAction, execute_cb=self.as_execute_cb, auto_start = False)
         self.agent_status_msg = AgentStatus()
         self.cur_smstate = None
 
@@ -73,9 +79,104 @@ class MONITORState(smach.State):
         self.parent_conn, self.child_conn = Pipe()
         self.streamer = Streamer(pipe=self.child_conn)
 
-    #determine if base is localized or not
-    def checkLocalized(self): 
-        pass
+        self.mb_client = actionlib.SimpleActionClient('move_base', MoveBaseAction)
+        self.cancel_goal = False
+        self.is_active = False
+        self.feedback = MoveBaseActionFeedback()
+        self.result = MoveBaseActionResult()
+        self.atemr_server.start() #start action server
+    
+    def active_cb(self):
+        #inform EXC that we are navigating to goal
+        self.outgoing_queue.put(StateData(akeys.TRIGR_STATE_EXTRA, (astates.EXC, GoalStatus.ACTIVE), astates.EXC))
+    
+    def feedback_cb(self, msg):
+        self.feedback.header.stamp = rospy.Time.now()
+        self.feedback.header.frame_id = 'map'
+        self.feedback.status = self.mb_client.get_state()
+        self.feedback.feedback = msg
+
+    def done_cb(self, state, result):
+        self.result.header.stamp = rospy.Time.now()
+        self.result.header.frame_id = 'map'
+        self.result.status = self.mb_client.get_state()
+        self.result.result = result
+
+    def as_execute_cb(self, goal):
+        #check if move_base action server is running
+        if(self.mb_client.wait_for_server(timeout=5) and (self.cur_smstate == astates.IDL)):
+            #change to EXC state if current state is IDL
+            self.outgoing_queue.put(StateData(akeys.TRIGR_STATE, astates.EXC, astates.IDL))
+            #wait till EXC is achieved
+            wait_rate = rospy.Rate(2)
+            while((self.cur_smstate != astates.EXC)):
+                rospy.loginfo('Awaiting EXC state ...')
+                wait_rate.sleep()
+            
+            #reset feedback and result variables
+            self.feedback = MoveBaseActionFeedback()
+            self.result = MoveBaseActionResult()
+            #send goal to move-base server
+            self.mb_client.send_goal(goal, active_cb=self.active_cb, feedback_cb=self.feedback_cb, done_cb=self.done_cb)
+            #wait for goal to become active
+            while(not self.is_active):
+                rospy.loginfo('waiting for goal to become active ...')
+                if(self.cancel_goal):
+                    self.mb_client.cancel_all_goals()
+                    break
+                wait_rate.sleep()
+            
+            rate = rospy.Rate(20)
+            while(self.is_active and 
+                ((self.mb_client.get_state() == GoalStatus.ACTIVE) or (self.mb_client.get_state() == GoalStatus.PENDING ))): #listen to feedback and send back to webserver
+                self.atemr_server.publish_feedback(self.feedback)
+                if(self.cancel_goal):
+                    self.mb_client.cancel_all_goals()
+                    break
+                if(self.atemr_server.is_preempt_requested()):
+                    self.mb_client.cancel_goal()
+                    self.atemr_server.set_preempted()
+                    new_goal = self.atemr_server.is_new_goal_available()
+                    if(new_goal is not None):
+                        self.mb_client.send_goal(new_goal, active_cb=self.active_cb, feedback_cb=self.feedback_cb, done_cb=self.done_cb)
+                        while(True):
+                            rospy.loginfo('waiting for new goal to become active ...')
+                            if(self.cancel_goal):
+                                self.mb_client.cancel_all_goals()
+                                break
+                            wait_rate.sleep()
+                rate.sleep()
+            
+            if(self.cancel_goal):
+                self.outgoing_queue.put(StateData(akeys.TRIGR_STATE_EXTRA, (astates.EXC, GoalStatus.SUCCEEDED), astates.EXC))
+                self.atemr_server.set_preempted()
+            if(self.result.status == GoalStatus.SUCCEEDED): #depends on the result
+                self.outgoing_queue.put(StateData(akeys.TRIGR_STATE_EXTRA, (astates.EXC, GoalStatus.SUCCEEDED), astates.EXC))
+                self.atemr_server.set_succeeded(self.result)
+            else:
+                self.outgoing_queue.put(StateData(akeys.TRIGR_STATE_EXTRA, (astates.EXC, GoalStatus.ABORTED), astates.EXC))
+                self.atemr_server.set_aborted(self.result)
+            
+            self.is_active = False
+            self.cancel_goal = False
+            
+            
+
+    #TODO: determine if base is localized or not
+    def checkLocalized(self):
+        is_localized = False 
+        try:
+            msg = rospy.wait_for_message(cfgContext['loc_topic'], PoseWithCovarianceStamped, timeout=2)
+            msg.pose.covariance # array of 36
+        except rospy.ROSException as e:
+            pass
+
+        if(self.agent_states[4] == 0 and not is_localized):
+            pass
+        else:
+            self._alock.acquire()
+            self.agent_states[4] = 1 if(is_localized) else 0 #simulated localization
+            self._alock.release()
 
     #determine if connected to WiFi
     def checkWifiConnection(self): 
@@ -205,8 +306,10 @@ class MONITORState(smach.State):
         if(req.is_operator_action.data and ((self.cur_smstate == astates.IDL) or (self.cur_smstate == astates.ERR))):
             '''state checks are performed in the web UI (browser side)'''
             if(req.initiateShutdown.data): #on_initiateShutdown: trigger transition to SHUTDOWN state (success)
+                #print('shutdown request received!')
                 self.outgoing_queue.put(StateData(akeys.TRIGR_STATE_EXTRA, (astates.SDWN, (ShutdownAction.SHUTDOWN, self.launch_obj)), self.cur_smstate))
             if(req.initiateRestart.data): #on_initiateRestart: trigger transition to SHUTDOWN state (restart)
+                #print('reboot request received!')
                 self.outgoing_queue.put(StateData(akeys.TRIGR_STATE_EXTRA, (astates.SDWN, (ShutdownAction.RESTART, self.launch_obj)), self.cur_smstate))
         elif(req.is_operator_action.data and ((self.cur_smstate != astates.IDL) or (self.cur_smstate != astates.ERR))):
                 resp.canExecute.data = False
@@ -255,9 +358,10 @@ class MONITORState(smach.State):
         
         # trigger goal execution
         if((req.is_goal_action.data) and (self.cur_smstate == astates.IDL)):
-            self.outgoing_queue.put(StateData(akeys.TRIGR_STATE, astates.IDL))
+            self.outgoing_queue.put(StateData(akeys.TRIGR_STATE, astates.EXC, astates.IDL))
         elif((req.is_goal_action.data) and (self.cur_smstate == astates.EXC)):
-            self.outgoing_queue.put(StateData(akeys.TRIGR_STATE_EXTRA, (astates.IDL, req.cancel_goal.data), astates.EXC))
+            self.cancel_goal = req.cancel_goal.data
+            #self.outgoing_queue.put(StateData(akeys.TRIGR_STATE_EXTRA, (astates.IDL, req.cancel_goal.data), astates.EXC))
         elif((req.is_goal_action.data) and ((self.cur_smstate != astates.IDL) or (self.cur_smstate != astates.EXC))):
             resp.canExecute.data = False
             resp.rejectReason.data = 'Error occurred | Code: ' + ErrCodes.STATE_MISMATCH

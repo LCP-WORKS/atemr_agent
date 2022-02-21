@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import time, os
+import os
 import rospy
 import smach
 from atemr_msgs.srv import HardwareService, HardwareServiceRequest

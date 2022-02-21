@@ -19,3 +19,7 @@ webserver_topic: /webserver_status
 agent_topic: /agent_status
 dbus_topic: /connection_status
 node_controller_topic: /node_status
+loc_topic: /amcl_pose
+
+#parameters
+monitor_server: atemr_base
