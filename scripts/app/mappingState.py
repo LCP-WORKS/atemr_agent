@@ -158,9 +158,11 @@ class MAPState(smach.State):
                             self.save_map(data[1])
                             #kill mapping node and set current map to the new map
                             outcome = 'success' if(self.start_stop_mapping(stop=True) and self.change_map(data[1])) else 'failure'
+                            break
                         if((sm_state == astates.IDL) and (data[0] == MapAction.DISCARD_NEW_MAP) and is_making_map):
                             is_making_map = False
                             outcome = 'success' if(self.start_stop_mapping(stop=True)) else 'failure'
+                            break
                     else:
                         rospy.logwarn('Received unknown from queue: %s' % msg_obj.name)
                     msg_obj = None
