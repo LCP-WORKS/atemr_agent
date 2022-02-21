@@ -130,26 +130,6 @@ class MAPState(smach.State):
         self.out_queue.put(StateData(akeys.SM_STATE, astates.MAP))
         while(not rospy.is_shutdown()):
             rospy.loginfo("MAP running ....")
-
-            if(not self.in_queue.empty()):
-                msg_obj = sdataDecoder(self.in_queue, astates.MAP)
-                if(msg_obj is not None): #process received queue data here
-                    if(msg_obj.name == akeys.TRIGR_STATE_EXTRA):
-                        (sm_state, data) = msg_obj.dataObject
-                        #process goal commands
-                        if((sm_state == astates.IDL) and (data[0] == MapAction.SAVE_NEW_MAP.value) and is_making_map):
-                            is_making_map = False
-                            #save map under the provided name
-                            self.save_map(data[1])
-                            #kill mapping node and set current map to the new map
-                            outcome = 'success' if(self.start_stop_mapping(stop=True) and self.change_map(data[1])) else 'failure'
-                        if((sm_state == astates.IDL) and (data[0] == MapAction.DISCARD_NEW_MAP.value) and is_making_map):
-                            is_making_map = False
-                            outcome = 'success' if(self.start_stop_mapping(stop=True)) else 'failure'
-                    else:
-                        rospy.logwarn('Received unknown from queue: %s' % msg_obj.name)
-                    msg_obj = None
-
             if(userdata.map_data_i[0].value == MapAction.CHANGE_MAP.value):
                 res = self.change_map(userdata.map_data_i[1])
                 if(res):
@@ -165,7 +145,25 @@ class MAPState(smach.State):
                     else:
                         outcome = 'failure'
                         break
-                #userdata.map_data_i = None
+            
+            if(not self.in_queue.empty()):
+                msg_obj = sdataDecoder(self.in_queue, astates.MAP)
+                if(msg_obj is not None): #process received queue data here
+                    if(msg_obj.name == akeys.TRIGR_STATE_EXTRA):
+                        (sm_state, data) = msg_obj.dataObject
+                        #process goal commands
+                        if((sm_state == astates.IDL) and (data[0] == MapAction.SAVE_NEW_MAP) and is_making_map):
+                            is_making_map = False
+                            #save map under the provided name
+                            self.save_map(data[1])
+                            #kill mapping node and set current map to the new map
+                            outcome = 'success' if(self.start_stop_mapping(stop=True) and self.change_map(data[1])) else 'failure'
+                        if((sm_state == astates.IDL) and (data[0] == MapAction.DISCARD_NEW_MAP) and is_making_map):
+                            is_making_map = False
+                            outcome = 'success' if(self.start_stop_mapping(stop=True)) else 'failure'
+                    else:
+                        rospy.logwarn('Received unknown from queue: %s' % msg_obj.name)
+                    msg_obj = None
             
             if(is_making_map):
                 rospy.loginfo("Is Mapping ....")
