@@ -118,7 +118,6 @@ class MONITORState(smach.State):
             self.feedback = MoveBaseActionFeedback()
             self.result = MoveBaseActionResult()
             #send goal to move-base server
-            goal.header.frame_id = "map"
             self.mb_client.send_goal(goal, active_cb=self.active_cb, feedback_cb=self.feedback_cb, done_cb=self.done_cb)
             #wait for goal to become active
             while(not self.is_active):
