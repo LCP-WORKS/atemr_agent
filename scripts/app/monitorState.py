@@ -90,6 +90,7 @@ class MONITORState(smach.State):
     def active_cb(self):
         #inform EXC that we are navigating to goal
         self.outgoing_queue.put(StateData(akeys.TRIGR_STATE_EXTRA, (astates.EXC, GoalStatus.ACTIVE), astates.EXC))
+        self.is_active = True
     
     def feedback_cb(self, msg):
         self.feedback.header.stamp = rospy.Time.now()
@@ -167,7 +168,7 @@ class MONITORState(smach.State):
         try:
             msg = rospy.wait_for_message(cfgContext['loc_topic'], PoseWithCovarianceStamped, timeout=2)
             cov = msg.pose.covariance # array of 36
-            if((abs(cov[0]) <= 0.08) and (abs(cov[1]) <= 0.03) and (abs(cov[6]) <= 0.03) and (abs(cov[7]) <= 0.09) and (abs(cov[35]) <= 0.012)):
+            if((abs(cov[0]) <= 0.08) and (abs(cov[1]) <= 0.1) and (abs(cov[6]) <= 0.1) and (abs(cov[7]) <= 0.09) and (abs(cov[35]) <= 0.08)):
                 self._alock.acquire()
                 self.agent_states[4] = 1
                 self._alock.release()
