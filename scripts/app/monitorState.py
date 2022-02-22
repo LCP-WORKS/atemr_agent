@@ -168,7 +168,7 @@ class MONITORState(smach.State):
         try:
             msg = rospy.wait_for_message(cfgContext['loc_topic'], PoseWithCovarianceStamped, timeout=2)
             cov = msg.pose.covariance # array of 36
-            if((abs(cov[0]) <= 0.08) and (abs(cov[1]) <= 0.01) and (abs(cov[6]) <= 0.01) and (abs(cov[7]) <= 0.01) and (abs(cov[35]) <= 0.01)):
+            if((abs(cov[0]) <= 0.08) and (abs(cov[1]) <= 0.01) and (abs(cov[6]) <= 0.01) and (abs(cov[7]) <= 0.05) and (abs(cov[35]) <= 0.012)):
                 self._alock.acquire()
                 self.agent_states[4] = 1
                 self._alock.release()
