@@ -57,7 +57,7 @@ class EXECState(smach.State):
 
             #check if goal reached or terminated and transition
             if(self.is_navigating):
-                rospy.loginfo_throttle('Is navigating ...')
+                rospy.loginfo_throttle(1, 'Is navigating ...')
             rate.sleep()
         
         return outcome

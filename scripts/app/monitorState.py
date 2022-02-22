@@ -19,7 +19,7 @@ from atemr_msgs.msg import Status, WebStatus
 from geometry_msgs.msg import PoseWithCovarianceStamped
 
 import actionlib
-from move_base_msgs.msg import MoveBaseAction, MoveBaseActionFeedback, MoveBaseActionResult, MoveBaseFeedback
+from move_base_msgs.msg import MoveBaseAction, MoveBaseActionFeedback, MoveBaseActionResult, MoveBaseFeedback, MoveBaseResult
 from actionlib_msgs.msg import GoalStatus
 
 class MONITORState(smach.State):
@@ -83,8 +83,8 @@ class MONITORState(smach.State):
         self.mb_client = actionlib.SimpleActionClient('move_base', MoveBaseAction)
         self.cancel_goal = False
         self.is_active = False
-        self.feedback = MoveBaseActionFeedback()
-        self.result = MoveBaseActionResult()
+        self.feedback = MoveBaseFeedback()
+        self.result = MoveBaseResult()
         self.atemr_server.start() #start action server
     
     def active_cb(self):
@@ -93,16 +93,23 @@ class MONITORState(smach.State):
         self.is_active = True
     
     def feedback_cb(self, msg):
-        self.feedback.header.stamp = rospy.Time.now()
-        self.feedback.header.frame_id = 'map'
-        self.feedback.status = self.mb_client.get_state()
-        self.feedback.feedback = msg
+        #self.feedback.header.stamp = rospy.Time.now()
+        #self.feedback.header.frame_id = 'map'
+        #self.feedback.status = self.mb_client.get_state()
+        print('Feedback msg')
+        print(msg)
+
+        #self.feedback.feedback = msg
 
     def done_cb(self, state, result):
-        self.result.header.stamp = rospy.Time.now()
-        self.result.header.frame_id = 'map'
-        self.result.status = self.mb_client.get_state()
-        self.result.result = result
+        print('Result')
+        print(result)
+        print('\State')
+        print(state)
+        #self.result.header.stamp = rospy.Time.now()
+        #self.result.header.frame_id = 'map'
+        #self.result.status = self.mb_client.get_state()
+        #self.result.result = result
 
     def as_execute_cb(self, goal):
         #check if move_base action server is running
@@ -116,8 +123,8 @@ class MONITORState(smach.State):
                 wait_rate.sleep()
             
             #reset feedback and result variables
-            self.feedback = MoveBaseActionFeedback()
-            self.result = MoveBaseActionResult()
+            self.feedback = MoveBaseFeedback()
+            self.result = MoveBaseResult()
             #send goal to move-base server
             self.mb_client.send_goal(goal, active_cb=self.active_cb, feedback_cb=self.feedback_cb, done_cb=self.done_cb)
             #wait for goal to become active
