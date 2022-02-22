@@ -83,6 +83,7 @@ class MONITORState(smach.State):
         self.mb_client = actionlib.SimpleActionClient('move_base', MoveBaseAction)
         self.cancel_goal = False
         self.is_active = False
+        self.goal_result = None
         self.feedback = MoveBaseFeedback()
         self.result = MoveBaseResult()
         self.atemr_server.start() #start action server
@@ -93,23 +94,10 @@ class MONITORState(smach.State):
         self.is_active = True
     
     def feedback_cb(self, msg):
-        #self.feedback.header.stamp = rospy.Time.now()
-        #self.feedback.header.frame_id = 'map'
-        #self.feedback.status = self.mb_client.get_state()
-        print('Feedback msg')
-        print(msg)
-
-        #self.feedback.feedback = msg
+        self.feedback = msg
 
     def done_cb(self, state, result):
-        print('Result')
-        print(result)
-        print('\State')
-        print(state)
-        #self.result.header.stamp = rospy.Time.now()
-        #self.result.header.frame_id = 'map'
-        #self.result.status = self.mb_client.get_state()
-        #self.result.result = result
+        self.goal_result = state
 
     def as_execute_cb(self, goal):
         #check if move_base action server is running
@@ -159,7 +147,7 @@ class MONITORState(smach.State):
             if(self.cancel_goal):
                 self.outgoing_queue.put(StateData(akeys.TRIGR_STATE_EXTRA, (astates.EXC, GoalStatus.SUCCEEDED), astates.EXC))
                 self.atemr_server.set_preempted()
-            if(self.result.status == GoalStatus.SUCCEEDED): #depends on the result
+            if(self.goal_result == GoalStatus.SUCCEEDED): #depends on the result
                 self.outgoing_queue.put(StateData(akeys.TRIGR_STATE_EXTRA, (astates.EXC, GoalStatus.SUCCEEDED), astates.EXC))
                 self.atemr_server.set_succeeded(self.result)
             else:
@@ -168,6 +156,7 @@ class MONITORState(smach.State):
             
             self.is_active = False
             self.cancel_goal = False
+            self.goal_result = None
             
             
 
